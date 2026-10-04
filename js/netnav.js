@@ -7,7 +7,7 @@
     [2, "Signature Universal Paradox Immune Calculator", "jah-calculator"],
     [3, "The Signature Dictionary", "jah-dictionary"],
     [4, "JAH Wiki", "jah-wiki"],
-    [5, "JAH-N Wiki", "jah-n-wiki-leaks"],
+    [5, "JAH-N Wiki Leaks", "jah-n-wiki-leaks"],
     [6, "Signature Llama", "signature-llama"],
     [7, "The Signature AI Phone Book", "jah-ai-models"],
     [8, "Globally Rejustered Patent Catalog", "cyber-patent-catalog"],
