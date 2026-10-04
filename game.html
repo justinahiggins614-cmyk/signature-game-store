@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Play — The Signature Game Store</title>
+<meta name="description" content="Play a Signature Game Store game on-site, meet its AI pal, read it aloud, copy or download the real game code.">
+<style>
+:root{--neon:#00f0ff;--pink:#ff2fb3;--gold:#ffb300;--bg:#070a16;--card:#0e1426;--ink:#eaf2ff;--mut:#9aa4b2}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+.tabs{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:16px;background:#0a0f22;border-bottom:2px solid #1b2a6b}
+.tabs a{background:#141b38;color:var(--ink);text-decoration:none;padding:11px 26px;border-radius:999px;font-weight:700;border:1px solid #2a3a6b;min-height:48px;display:inline-flex;align-items:center}
+.tabs a.on{background:var(--neon);color:#04121a;border-color:var(--neon)}
+.card{background:var(--card);border:1px solid #1f2c55;border-radius:14px;padding:22px;margin:22px 0}
+h1{color:#fff;letter-spacing:1px;font-size:clamp(24px,4.5vw,40px)}
+h2{color:var(--neon);margin-bottom:10px;letter-spacing:1px}
+.btn{display:inline-block;background:var(--neon);color:#04121a;font-weight:800;padding:13px 26px;border-radius:10px;text-decoration:none;border:0;cursor:pointer;font-size:16px;min-height:48px;margin:6px 8px 6px 0}
+.btn.ghost{background:transparent;color:var(--neon);border:2px solid var(--neon)}
+.btn.pink{background:var(--pink);color:#fff}
+.stage{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.cover{flex:0 0 240px;max-width:100%}
+.cover svg{width:100%;height:auto;border-radius:10px;border:1px solid #22305f}
+.info{flex:1;min-width:260px}
+.chip{font-size:12px;background:#18224a;padding:4px 10px;border-radius:999px;color:#bcd0ff;margin-right:6px;display:inline-block;margin-bottom:6px}
+#gameCanvas{width:100%;max-width:520px;aspect-ratio:13/20;background:#000;border:2px solid var(--neon);border-radius:12px;touch-action:none;display:block;margin:0 auto}
+#overlay{position:relative}
+#bigMsg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(4,6,14,.82);border-radius:12px;text-align:center;padding:20px}
+#bigMsg.show{display:flex}
+#bigMsg h3{color:var(--gold);font-size:24px}
+.aiq{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.aiq input{flex:1;min-width:200px;padding:12px;border-radius:10px;border:1px solid #2a3a6b;background:#0a0f22;color:var(--ink);font-size:16px}
+#aiAnswer{background:#0a0f22;border:1px solid #22305f;border-radius:10px;padding:14px;margin-top:10px;min-height:60px}
+pre#codeView{background:#05070f;border:1px solid #22305f;border-radius:10px;padding:14px;overflow:auto;max-height:320px;font-size:12px;color:#bcd0ff;white-space:pre-wrap}
+footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--mut);font-size:14px}
+.netnav{background:#05070f;padding:18px 0;border-top:3px solid var(--pink)}
+.netnav ol{columns:2;column-gap:30px;list-style:none;font-size:14px}
+.netnav li{margin:5px 0;break-inside:avoid}
+.netnav a{color:#bcd0ff;text-decoration:none}
+.youarehere{display:inline-block;margin-top:12px;background:#3a0a2a;color:#ffd7ec;border:2px solid var(--pink);border-radius:999px;padding:8px 22px;font-weight:800}
+</style>
+</head>
+<body>
+<nav class="tabs" aria-label="Site tabs">
+  <a href="index.html">Main</a>
+  <a href="archive.html">🎮 Game Archive</a>
+</nav>
+<div class="wrap">
+  <p style="margin:16px 0"><a href="archive.html" style="color:var(--neon)">← Back to the Game Archive</a></p>
+  <div class="card"><div class="stage">
+    <div class="cover" id="coverBox"></div>
+    <div class="info">
+      <h1 id="gTitle">Loading…</h1>
+      <p id="gMeta" style="color:var(--mut);margin:6px 0"></p>
+      <div id="gChips"></div>
+      <p id="gDesc" style="margin:12px 0;font-size:17px"></p>
+      <p style="margin:8px 0"><strong style="color:var(--gold)">Controls:</strong> <span id="gControls"></span></p>
+      <p style="margin:8px 0"><strong style="color:var(--gold)">How to win:</strong> <span id="gWin"></span></p>
+      <div>
+        <button class="btn" id="readBtn">🔊 Read aloud</button>
+        <button class="btn ghost" id="copyBtn">⧉ Copy game file</button>
+        <button class="btn ghost" id="dlBtn">⬇ Download game (.html)</button>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="card" id="playCard">
+    <h2>PLAY IT HERE</h2>
+    <div id="overlay">
+      <canvas id="gameCanvas" width="420" height="640" aria-label="Game canvas"></canvas>
+      <div id="bigMsg"><h3 id="bigTitle"></h3><p id="bigText"></p><button class="btn" id="againBtn">Play again</button></div>
+    </div>
+    <p style="color:var(--mut);margin-top:10px;font-size:14px">Keyboard: arrows/WASD + Space · Touch: swipe to move, tap to act. Sound: on.</p>
+  </div>
+
+  <div class="card" id="conceptCard" style="display:none">
+    <h2>GAME CONCEPT</h2>
+    <p id="conceptText" style="font-size:16px"></p>
+    <div>
+      <button class="btn ghost" id="copyConceptBtn">⧉ Copy concept</button>
+      <button class="btn ghost" id="dlConceptBtn">⬇ Download concept (.txt)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 id="aiName">MEET YOUR AI PAL</h2>
+    <p id="aiDesc" style="font-size:16px"></p>
+    <p style="margin-top:8px;color:var(--gold)" id="aiTip"></p>
+    <div class="aiq">
+      <input id="aiInput" placeholder="Ask your AI pal about this game…" aria-label="Ask your AI pal">
+      <button class="btn pink" id="aiAsk">Ask</button>
+    </div>
+    <div id="aiAnswer">Ask me how to play, how to win, or for a strategy tip.</div>
+  </div>
+
+  <div class="card">
+    <h2>GAME CODE</h2>
+    <p style="color:var(--mut);margin-bottom:10px">The real code that runs above — copy it or download the standalone file.</p>
+    <pre id="codeView">Loading…</pre>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <nav class="netnav" aria-label="The JAH Network"><div class="wrap">
+      <strong style="color:#fff">THE JAH NETWORK</strong>
+      <ol id="netnavList"></ol>
+      <span class="youarehere">30 · The Signature Game Store — YOU ARE HERE</span>
+    </div></nav>
+    <p style="margin-top:14px">© 2026 Manon · The Signature Game Store</p>
+  </div>
+</footer>
+
+<script src="js/gf.js"></script>
+<script src="js/catalog.js"></script>
+<script src="js/games/batch1.js"></script>
+<script src="js/games/batch2.js"></script>
+<script src="js/games/batch3.js"></script>
+<script src="js/netnav.js"></script>
+<script>
+(function(){
+  "use strict";
+  function $(id){ return document.getElementById(id); }
+  var q = new URLSearchParams(location.search);
+  var id = q.get("id") || "JAH-GAME-000007";
+  var g = GameCatalog.findGame(id) || GameCatalog.GAMES[6];
+  var isConcept = !!g.concept;
+  document.title = g.title + " — The Signature Game Store";
+
+  $("gTitle").textContent = g.title;
+  $("gMeta").textContent = g.id + " · " + g.genre + " · " + g.era;
+  $("gChips").innerHTML =
+    '<span class="chip">' + (g.playable ? "▶ Playable on-site" : "💾 Concept download") + "</span>" +
+    '<span class="chip">🎨 Cover #' + g.cover.palette + "-" + g.cover.motif + "</span>" +
+    '<span class="chip">🤖 ' + GameCatalog.esc(GameCatalog.aiName(g.ai)) + "</span>";
+  $("gDesc").textContent = g.description;
+  $("coverBox").innerHTML = GameCatalog.coverSVG(g);
+
+  // AI pal (defined before gameFileText needs it)
+  var ai = GameCatalog.aiPersona(g.ai);
+  $("aiName").textContent = "MEET YOUR AI PAL — " + ai.name.toUpperCase();
+  $("aiDesc").textContent = ai.desc;
+  $("aiTip").textContent = (g.aiRole === "opponent" ? "⚔️ Opponent: " : "🧭 Guide: ") + ai.tip;
+
+  if (isConcept) {
+    $("playCard").style.display = "none";
+    $("conceptCard").style.display = "block";
+    var c = g.concept;
+    $("conceptText").innerHTML =
+      "<strong>Title:</strong> " + GameCatalog.esc(c.title) + "<br><br>" +
+      "<strong>Description:</strong> " + GameCatalog.esc(c.description) + "<br><br>" +
+      "<strong>Rules:</strong> " + GameCatalog.esc(c.rules) + "<br><br>" +
+      "<strong>Controls:</strong> " + GameCatalog.esc(c.controls) + "<br><br>" +
+      "<strong>Difficulty:</strong> " + GameCatalog.esc(c.difficulty) + "<br><br>" +
+      "<strong>Seed:</strong> " + c.seed + " / 1,000,000";
+    $("gControls").textContent = c.controls;
+    $("gWin").textContent = c.rules.split(".")[0] + ".";
+    $("codeView").textContent = "Concept records are design documents — the playable seed games above ship with full code.";
+  } else {
+    $("gControls").textContent = g.controls;
+    $("gWin").textContent = g.win;
+    $("codeView").textContent = gameFileText();
+  }
+
+  // read aloud — one controller, play() stops current first
+  var speaking = false;
+  function stopRead(){ try{ speechSynthesis.cancel(); }catch(e){} speaking = false; $("readBtn").textContent = "🔊 Read aloud"; }
+  $("readBtn").onclick = function(){
+    if (speaking) { stopRead(); return; }
+    stopRead();
+    var txt = g.title + ". " + g.description + " Controls: " + $("gControls").textContent + " How to win: " + $("gWin").textContent;
+    var u = new SpeechSynthesisUtterance(txt);
+    u.onend = function(){ speaking = false; $("readBtn").textContent = "🔊 Read aloud"; };
+    u.onerror = u.onend;
+    speaking = true; $("readBtn").textContent = "⏹ Stop";
+    speechSynthesis.speak(u);
+  };
+
+  // copy / download
+  function realBootSrc(){
+    try {
+      var fn = window.GameStore.bootFn(g.key);
+      if (fn) return fn.toString();
+    } catch(e){}
+    return "function(api){ /* boot code ships in js/games/ */ }";
+  }
+  function gameFileText(){
+    return "/* " + g.title + " (" + g.id + ") — Signature Game Store game file.\n" +
+      "   Runs on the GameStore engine (js/gf.js). Standalone .html download embeds both. */\n" +
+      "GameStore.register(" + JSON.stringify(g.key) + ", { boot: " + realBootSrc() + " });\n\n" +
+      "/* ---- game file ----\n" + g.title + " (" + g.id + ")\n" +
+      g.description + "\nControls: " + g.controls + "\nWin: " + g.win +
+      "\nAI pal: " + ai.name + " (" + g.aiRole + ")\n*/\n";
+  }
+  $("copyBtn").onclick = function(){
+    var t = isConcept ? $("conceptText").innerText : gameFileText();
+    navigator.clipboard.writeText(t).then(function(){ $("copyBtn").textContent = "✓ Copied!"; setTimeout(function(){ $("copyBtn").textContent = "⧉ Copy game file"; }, 1500); });
+  };
+  $("dlBtn").onclick = function(){
+    if (isConcept) { download($("conceptText").innerText, g.key + "-concept.txt", "text/plain"); return; }
+    if (!window.__gfSrc) { $("dlBtn").textContent = "⏳ engine loading…"; return; }
+    download(standaloneHTML(), g.key + ".html", "text/html");
+  };
+  $("copyConceptBtn").onclick = function(){
+    navigator.clipboard.writeText($("conceptText").innerText).then(function(){ $("copyConceptBtn").textContent = "✓ Copied!"; setTimeout(function(){ $("copyConceptBtn").textContent = "⧉ Copy concept"; }, 1500); });
+  };
+  $("dlConceptBtn").onclick = function(){ download($("conceptText").innerText, g.key + "-concept.txt", "text/plain"); };
+  function download(text, name, type){
+    var b = new Blob([text], {type: type});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(b); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+  // standalone runnable .html — fetches the real engine + this game's real boot code
+  function standaloneHTML(){
+    var bootSrc = realBootSrc();
+    return "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>" +
+      "<title>" + g.title.replace(/</g,"") + " — Signature Game Store</title></head>" +
+      "<body style='background:#070a16;display:flex;justify-content:center;padding:12px'>" +
+      "<canvas id='c' width='420' height='640' style='border:2px solid #00f0ff;border-radius:12px;touch-action:none'></canvas>" +
+      "<script>\n" + window.__gfSrc + "\n" +
+      "GameStore.register(" + JSON.stringify(g.key) + ", { boot: " + bootSrc + " });\n" +
+      "GF.boot(" + JSON.stringify(g.key) + ", document.getElementById('c'), {});\n<\/script></body></html>";
+  }
+  // capture real sources for download/copy
+  fetch("js/gf.js").then(function(r){ return r.text(); }).then(function(t){ window.__gfSrc = t; }).catch(function(){ window.__gfSrc = "/* engine load failed */"; });
+
+  // boot the game on-site
+  if (!isConcept) {
+    var handle = null;
+    function start(){
+      $("bigMsg").classList.remove("show");
+      if (handle) handle.stop();
+      handle = GF.boot(g.key, $("gameCanvas"), {
+        onOver: function(msg){ showEnd("GAME OVER", msg); },
+        onWin: function(msg){ showEnd("YOU WIN!", msg); }
+      });
+    }
+    function showEnd(title, msg){
+      $("bigTitle").textContent = title;
+      $("bigText").textContent = msg;
+      $("bigMsg").classList.add("show");
+    }
+    $("againBtn").onclick = start;
+    start();
+  }
+
+  // AI pal Q&A — honest, deterministic, grounded in this game's data
+  function aiAnswer(q){
+    q = q.toLowerCase();
+    var has = function(){ for (var i=0;i<arguments.length;i++) if (q.indexOf(arguments[i])>=0) return true; return false; };
+    if (has("who","your name","you")) return "I'm " + ai.name + " — " + ai.desc;
+    if (has("how","control","play","move","button","key"))
+      return "Here's how you play " + g.title + ": " + g.controls + " On touch screens, swipe to move and tap to act.";
+    if (has("win","beat","finish","goal")) return "To win " + g.title + ": " + g.win;
+    if (has("tip","strateg","hard","difficult","stuck")) return ai.tip + " Also: " + g.win;
+    if (has("cover","picture","art")) return "My cover is generated from the game's own ID — the same art every visit, unique to " + g.title + ".";
+    if (has("download","copy","code")) return "Use the Copy game file or Download game (.html) buttons above — the download runs standalone in any browser.";
+    if (has("hi","hello","hey")) return "Hello! I'm " + ai.name + ", your " + g.aiRole + " for " + g.title + ". Ask me how to play or for a tip.";
+    return "I'm " + ai.name + ", your " + g.aiRole + " here. Ask me how to play " + g.title + ", how to win, or for a strategy tip.";
+  }
+  function ask(){
+    var v = $("aiInput").value.trim();
+    if (!v) return;
+    $("aiAnswer").textContent = ai.name + ": " + aiAnswer(v);
+    $("aiInput").value = "";
+  }
+  $("aiAsk").onclick = ask;
+  $("aiInput").addEventListener("keydown", function(e){ if (e.key === "Enter") ask(); });
+
+  GameCatalog.buildNetNav($("netnavList"));
+})();
+</script>
+</body>
+</html>

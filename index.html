@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Signature Game Store</title>
+<meta name="description" content="The Signature Game Store — Manon's own game shop. Playable games from 1970s arcade-style to modern combat-style, a starship multiverse, and a deterministic game generator marching to one million games.">
+<link rel="canonical" href="https://justinahiggins614-cmyk.github.io/signature-game-store/">
+<style>
+:root{--neon:#00f0ff;--pink:#ff2fb3;--gold:#ffb300;--bg:#070a16;--card:#0e1426;--ink:#eaf2ff;--mut:#9aa4b2}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+.hero{position:relative;border-bottom:3px solid var(--neon)}
+.hero img{width:100%;max-height:420px;object-fit:cover;display:block}
+.hero .over{position:absolute;inset:auto 0 0 0;padding:26px 20px;background:linear-gradient(transparent,rgba(4,6,14,.92))}
+.hero h1{font-size:clamp(30px,6vw,58px);letter-spacing:2px;color:#fff;text-shadow:0 0 18px var(--neon),0 0 46px var(--pink)}
+.hero p{color:#d7e6ff;font-size:clamp(14px,2.4vw,19px);max-width:720px}
+.tabs{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:16px;background:#0a0f22;border-bottom:2px solid #1b2a6b}
+.tabs a{background:#141b38;color:var(--ink);text-decoration:none;padding:11px 26px;border-radius:999px;font-weight:700;border:1px solid #2a3a6b;min-height:48px;display:inline-flex;align-items:center}
+.tabs a.on{background:var(--neon);color:#04121a;border-color:var(--neon);box-shadow:0 0 14px var(--neon)}
+.card{background:var(--card);border:1px solid #1f2c55;border-radius:14px;padding:22px;margin:22px 0}
+h2{color:var(--neon);margin-bottom:10px;letter-spacing:1px}
+.btn{display:inline-block;background:var(--neon);color:#04121a;font-weight:800;padding:13px 26px;border-radius:10px;text-decoration:none;border:0;cursor:pointer;font-size:16px;min-height:48px}
+.btn.ghost{background:transparent;color:var(--neon);border:2px solid var(--neon)}
+.btn.pink{background:var(--pink);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:14px}
+.gcard{background:#0a0f22;border:1px solid #22305f;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.gcard svg{width:100%;height:auto;display:block}
+.gcard .b{padding:14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.gcard h3{color:#fff;font-size:18px}
+.gcard .meta{color:var(--mut);font-size:13px}
+.gcard .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.chip{font-size:12px;background:#18224a;padding:4px 10px;border-radius:999px;color:#bcd0ff}
+.mission{font-size:17px;color:#d7e6ff}
+footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--mut);font-size:14px}
+.netnav{background:#05070f;padding:18px 0;border-top:3px solid var(--pink)}
+.netnav ol{columns:2;column-gap:30px;list-style:none;font-size:14px}
+.netnav li{margin:5px 0;break-inside:avoid}
+.netnav a{color:#bcd0ff;text-decoration:none}
+.netnav a:hover{color:var(--neon)}
+.youarehere{display:inline-block;margin-top:12px;background:#3a0a2a;color:#ffd7ec;border:2px solid var(--pink);border-radius:999px;padding:8px 22px;font-weight:800}
+</style>
+</head>
+<body>
+<div class="hero">
+  <img src="assets/hero.jpg" alt="Neon game store interior with shelves of games and arcade glow">
+  <div class="over">
+    <div class="wrap">
+      <h1>THE SIGNATURE GAME STORE</h1>
+      <p>Manon's own game shop — every shelf stocked by the Signature line.</p>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs" aria-label="Site tabs">
+  <a href="index.html" class="on" aria-current="page">Main</a>
+  <a href="archive.html">🎮 Game Archive</a>
+</nav>
+
+<div class="wrap">
+  <section class="card">
+    <h2>WELCOME TO THE STORE</h2>
+    <p class="mission">This is <strong>The Signature Game Store</strong> — a real, working game shop built by Manon.
+    Every game on the shelves is playable right here in your browser, or downloadable as real code you can keep.
+    The collection runs from <strong>1970s arcade-style cabinets</strong> through 90s puzzle eras to <strong>modern combat-style ops</strong> —
+    plus Signature remakes of classic game <em>styles</em> (in the style of the greats, never copying them),
+    a <strong>starship multiverse</strong> of space-opera adventures, and brand-new originals found nowhere else.</p>
+    <p class="mission" style="margin-top:10px">Our mission: a million games, every one with its own cover, its own description, and its own AI companion from the
+    Signature AI Phone Book. The store is open around the clock — pick a game and play.</p>
+    <p style="margin-top:14px"><a class="btn" href="archive.html">Browse the Game Archive →</a></p>
+  </section>
+
+  <section class="card">
+    <h2>HOW THE STORE WORKS</h2>
+    <div class="grid">
+      <div><h3 style="color:var(--gold)">🕹️ PLAY ON-SITE</h3><p>Seeded games run right in this page — keyboard, touch, and tap controls. No downloads, no waiting.</p></div>
+      <div><h3 style="color:var(--gold)">💾 DOWNLOAD</h3><p>Every game ships as real JavaScript you can copy or download and run anywhere.</p></div>
+      <div><h3 style="color:var(--gold)">🎨 COVERS</h3><p>Each game gets a deterministic cover, generated from its own ID — the same cover every visit, unique per game.</p></div>
+      <div><h3 style="color:var(--gold)">🤖 AI PALS</h3><p>Games that need a guide or an opponent bring one from the Signature AI Phone Book — the same AIs, coherent everywhere.</p></div>
+    </div>
+  </section>
+
+  <section class="card" id="featured">
+    <h2>FEATURED THIS VISIT</h2>
+    <div class="grid" id="featuredGrid"><p style="color:var(--mut)">Loading the shelves…</p></div>
+    <p style="margin-top:12px"><a class="btn ghost" href="archive.html">See all games in the archive →</a></p>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <nav class="netnav" aria-label="The JAH Network">
+      <div class="wrap">
+        <strong style="color:#fff">THE JAH NETWORK</strong>
+        <ol id="netnavList"></ol>
+        <span class="youarehere">30 · The Signature Game Store — YOU ARE HERE</span>
+      </div>
+    </nav>
+    <p style="margin-top:14px">© 2026 Manon · The Signature Game Store · Games march to 1,000,000 · All games original Signature works; classic-style remakes are "in the style of" only.</p>
+  </div>
+</footer>
+
+<script src="js/gf.js"></script>
+<script src="js/catalog.js"></script>
+<script src="js/netnav.js"></script>
+<script>
+(function(){
+  var grid = document.getElementById("featuredGrid");
+  var seeds = GameCatalog.GAMES.slice(0, 6);
+  grid.innerHTML = "";
+  seeds.forEach(function(g){
+    var d = document.createElement("div");
+    d.className = "gcard";
+    d.innerHTML = GameCatalog.coverSVG(g) +
+      '<div class="b"><h3>' + GameCatalog.esc(g.title) + "</h3>" +
+      '<div class="meta">' + GameCatalog.esc(g.id) + " · " + GameCatalog.esc(g.genre) + " · " + GameCatalog.esc(g.era) + "</div>" +
+      '<p style="font-size:14px;color:#c9d6f2">' + GameCatalog.esc(g.description) + "</p>" +
+      '<div class="row"><span class="chip">' + (g.playable ? "▶ Playable on-site" : "💾 Download") + "</span>" +
+      '<span class="chip">🤖 ' + GameCatalog.esc(GameCatalog.aiName(g.ai)) + "</span></div>" +
+      '<div class="row"><a class="btn" href="game.html?id=' + g.id + '">Open</a></div></div>';
+    grid.appendChild(d);
+  });
+  GameCatalog.buildNetNav(document.getElementById("netnavList"));
+})();
+</script>
+</body>
+</html>
