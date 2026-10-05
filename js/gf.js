@@ -113,9 +113,11 @@ function makeSfx() {
    with no reboot. */
 var GFX_TIERS = ["6-BIT", "32-BIT", "PLAYSTATION", "64", "PS3", "BEYOND"];
 var GFX_KEY = "jahgfx.tier";
+/* JAHProfile storage wrapper (JAHPS): public visitors pass keys through unprefixed (behavior unchanged); signed-in profiles get per-profile namespaced storage. */
+var JAHPS=(function(){try{return (typeof JAHProfile!=="undefined")&&JAHProfile.store?JAHProfile.store:localStorage;}catch(e){return localStorage;}})();
 var gfxTier = 3; /* default "64": clean, slick, fast on phones */
 try {
-  var _gs = (typeof localStorage !== "undefined") ? localStorage.getItem(GFX_KEY) : null;
+  var _gs = JAHPS.get(GFX_KEY);
   var _gt = parseInt(_gs || "", 10);
   if (_gt >= 0 && _gt < GFX_TIERS.length) gfxTier = _gt;
 } catch (e) {}
@@ -126,7 +128,7 @@ GF.tierName = function () { return GFX_TIERS[gfxTier]; };
 GF.setTier = function (t) {
   t = Math.max(0, Math.min(GFX_TIERS.length - 1, t | 0));
   gfxTier = t;
-  try { if (typeof localStorage !== "undefined") localStorage.setItem(GFX_KEY, String(t)); } catch (e) {}
+  try { JAHPS.set(GFX_KEY, String(t)); } catch (e) {}
   return t;
 };
 

@@ -119,6 +119,7 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   </div>
 </footer>
 
+<script src="js/signin.js"></script>
 <script src="js/gf.js"></script>
 <script src="js/catalog.js"></script>
 <script src="js/games/batch1.js"></script>
@@ -303,7 +304,9 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
 /* ---------- first-visit WELCOME overlay (2026-10-04 standard): centered modal.
    NO auto-scroll, NO spotlight, NO section jumps — the page stays put, the overlay teaches. ---------- */
 var FLAG="jah-tour-seen-gamestore";
-function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+/* JAHProfile storage wrapper (JAHPS): public visitors pass keys through unprefixed (behavior unchanged); signed-in profiles get per-profile namespaced storage. */
+var JAHPS=(function(){try{return (typeof JAHProfile!=="undefined")&&JAHProfile.store?JAHProfile.store:localStorage;}catch(e){return localStorage;}})();
+function ls(k,v){try{if(v===undefined)return JAHPS.get(k);JAHPS.set(k,v)}catch(e){return null}}
 var w=document.getElementById("jahWelcome"),
     guide=document.getElementById("jahGuide"),
     guideCard=document.getElementById("jahGuideCard"),
@@ -328,6 +331,17 @@ guide.addEventListener("click",function(e){if(e.target===guide)closeGuide()});
 var __qs="",__hash="";try{__qs=location.search;__hash=location.hash}catch(e){}
 if(!ls(FLAG)&&__qs.indexOf("id=")<0){setTimeout(openWelcome,900)}
 }catch(e){}})();</script>
+<script>
+(function () {
+  /* JAHProfile sign-in — mount the header button. signin.js is already loaded above. */
+  var mount = document.querySelector('header .booksearch') ||
+              document.querySelector('nav.jtabbar') ||
+              document.querySelector('header nav') ||
+              document.querySelector('header') ||
+              document.body;
+  if (window.JAHProfile && JAHProfile.ui) JAHProfile.ui.renderButton(mount);
+})();
+</script>
 </body></html>";
   }
   // capture real sources for download/copy
@@ -498,7 +512,9 @@ if(!ls(FLAG)&&__qs.indexOf("id=")<0){setTimeout(openWelcome,900)}
 /* ---------- first-visit WELCOME overlay (2026-10-04 standard): centered modal.
    NO auto-scroll, NO spotlight, NO section jumps — the page stays put, the overlay teaches. ---------- */
 var FLAG="jah-tour-seen-gamestore";
-function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+/* JAHProfile storage wrapper (JAHPS): public visitors pass keys through unprefixed (behavior unchanged); signed-in profiles get per-profile namespaced storage. */
+var JAHPS=(function(){try{return (typeof JAHProfile!=="undefined")&&JAHProfile.store?JAHProfile.store:localStorage;}catch(e){return localStorage;}})();
+function ls(k,v){try{if(v===undefined)return JAHPS.get(k);JAHPS.set(k,v)}catch(e){return null}}
 var w=document.getElementById("jahWelcome"),
     guide=document.getElementById("jahGuide"),
     guideCard=document.getElementById("jahGuideCard"),
