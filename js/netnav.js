@@ -32,7 +32,9 @@
     [27, "The Signature 3D Print Mega Mall", "signature-3d-print"],
     [28, "Signature Earth", "signature-earth"],
     [29, "The Signature Flight School", "signature-flight-school"],
-    [31, "The Signature Website Creator", "signature-website-creator"]
+    [31, "The Signature Website Creator", "signature-website-creator"],
+    [32, "The Signature Antivirus", "signature-antivirus"],
+    [33, "The Signature OS Updater", "signature-os-updater"]
   ];
   function url(repo) { return "https://justinahiggins614-cmyk.github.io/" + repo + "/"; }
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
