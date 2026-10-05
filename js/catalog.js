@@ -110,7 +110,7 @@ var GAMES = [
 ];
 
 /* ---------- deterministic SVG covers ---------- */
-function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
 function coverSVG(game, w, h) {
   w = w || 300; h = h || 400;
@@ -246,14 +246,39 @@ function conceptFor(n) {  // n >= 14  -> deterministic concept
   var era = CONCEPT_ERAS[Math.floor(rng() * CONCEPT_ERAS.length)];
   var title = T1[Math.floor(rng() * T1.length)] + " " + T2[Math.floor(rng() * T2.length)];
   var id = "JAH-GAME-" + String(n).padStart(6, "0");
+  var d = "A Signature-line " + genre + " concept in " + era + " style. " + HOOKS[genre] + " (Concept record — full build queued in the generator.)";
   return {
     id: id, title: title, genre: genre, era: era, concept: true,
-    desc: "A Signature-line " + genre + " concept in " + era + " style. " + HOOKS[genre] + " (Concept record — full build queued in the generator.)",
+    desc: d, description: d,
     controls: "Concept — controls ship with the full build.",
+    rules: "Concept record — the full build ships with complete rules and win conditions.",
+    win: "Concept record — win conditions ship with the full build.",
     difficulty: ["Easy", "Medium", "Hard"][Math.floor(rng() * 3)],
+    seed: n,
+    cover: { palette: hashStr(id) % PALETTES.length, motif: genre },
     ai: { id: "JAH-AI-DOM-074", name: "Game Master (RPG)", role: "Concept narrator", line: "Weaves worlds from dice and dreams." }
   };
 }
+
+/* ---------- helpers the store pages call ---------- */
+function aiName(ai) { return (ai && ai.name) || "Game Master (RPG)"; }
+function aiPersona(ai) {
+  ai = ai || {};
+  var role = ai.role || "AI pal", line = ai.line || "";
+  return {
+    id: ai.id || "", name: aiName(ai), role: role, line: line,
+    desc: role + (line ? " — " + line : ""),
+    tip: line || "Ask me anything about this game."
+  };
+}
+/* normalize seed records so the pages never render "undefined" */
+GAMES.forEach(function (g) {
+  if (!g.description && g.desc) g.description = g.desc;
+  if (!g.win) g.win = "The game scores your run — play for the high score.";
+  if (!g.aiRole && g.ai && g.ai.role) g.aiRole = g.ai.role;
+  if (typeof g.playable === "undefined") g.playable = true;
+  g.cover = { palette: hashStr(g.id) % PALETTES.length, motif: g.genre || "arcade" };
+});
 
 /* archive helpers */
 function allPlayable() { return GAMES; }
@@ -271,6 +296,6 @@ function letterOf(g) {
 root.GameCatalog = {
   GAMES: GAMES, coverSVG: coverSVG, conceptFor: conceptFor,
   allPlayable: allPlayable, findGame: findGame, letterOf: letterOf,
-  PALETTES: PALETTES
+  PALETTES: PALETTES, esc: esc, aiName: aiName, aiPersona: aiPersona
 };
 })(typeof window !== "undefined" ? window : globalThis);
