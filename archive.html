@@ -113,11 +113,39 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
 (function(){
   "use strict";
   function $(id){ return document.getElementById(id); }
+  var q = new URLSearchParams(location.search);
+  var tierQ = parseInt(q.get("tier"), 10);
+  var genreQ = (q.get("genre") || "").toLowerCase();
+  var tierActive = !isNaN(tierQ) && tierQ >= 0 && tierQ <= 5;
+  /* tapping an era category sets the graphics tier for play */
+  if (tierActive) { try { GF.setTier(tierQ); } catch (e) {} }
   var seeds = GameCatalog.GAMES; // 13 playable seeds
   var concepts = [];
   for (var n = 14; n <= 60; n++) concepts.push(GameCatalog.conceptFor(n)); // first deterministic shelf of concepts
   var all = seeds.concat(concepts).sort(function(a,b){ return a.title.localeCompare(b.title); });
+  if (tierActive) {
+    var inTier = {};
+    GameCatalog.gamesForTier(tierQ).forEach(function(g){ inTier[g.id] = true; });
+    all = all.filter(function(g){ return inTier[g.id]; });
+  }
+  if (genreQ) {
+    all = all.filter(function(g){ return (g.genre || "").toLowerCase() === genreQ; });
+  }
   $("gCount").textContent = all.length;
+
+  /* filter banner: what you're looking at + how to clear it */
+  if (tierActive || genreQ) {
+    var banner = document.createElement("div");
+    banner.className = "card";
+    banner.style.borderColor = "var(--gold)";
+    var bits = [];
+    if (tierActive) bits.push("Era: <strong>" + GameCatalog.esc(GameCatalog.ERA_TIERS[tierQ].name) + "</strong> — graphics dial set to <strong>" + GameCatalog.esc(GameCatalog.ERA_TIERS[tierQ].name) + "</strong> for play");
+    if (genreQ) bits.push("Genre: <strong>" + GameCatalog.esc(genreQ) + "</strong>");
+    banner.innerHTML = "<h2 style='color:var(--gold)'>FILTERED VIEW</h2><p>" + bits.join(" · ") +
+      " · <a style='color:var(--neon)' href='archive.html'>Clear filter →</a></p>";
+    var wrap = document.querySelector(".wrap");
+    wrap.insertBefore(banner, document.getElementById("bestCard"));
+  }
 
   // ---- Best of the Best: Starship Odyssey ----
   var best = GameCatalog.findGame("JAH-GAME-000007");
@@ -128,7 +156,7 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   $("bestDesc").textContent = best.description;
   $("bestWhy").textContent = "The Game Master AI picked it: it's the biggest voyage in the store — six hand-built sectors (nebula, robot foundry, noir station, ember belt), a real captain's log that narrates your journey, resource strategy with fuel and artifacts, and a crossover multiverse in the style of the classic space operas. It shows off everything the store does: story, strategy, and skill in one game.";
   $("bestStats").textContent = "6 sectors · 1 starship · 2 resources (fuel, artifacts) · guided by " + ai.name + " · " + best.controls;
-  $("bestPlay").href = "game.html?id=" + best.id;
+  $("bestPlay").href = "game.html?id=" + best.id + "&tier=" + GameCatalog.tierIndexOf(best);
   var reading = false;
   function stopRead(){ try{ speechSynthesis.cancel(); }catch(e){} reading=false; $("bestRead").textContent="🔊 Read aloud"; }
   $("bestRead").onclick = function(){
@@ -171,7 +199,7 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
     if (!hits.length) { $("aiFind").textContent = "I couldn't find a match for '" + q + "' yet — but the shelves grow toward a million. Try 'space', 'puzzle', 'racer', or 'combat'."; return; }
     $("aiFind").innerHTML = "Here's what I found for '<strong>" + GameCatalog.esc(q) + "</strong>':<br><br>" +
       hits.map(function(h){
-        return "🎮 <a style='color:var(--neon)' href='game.html?id=" + h.g.id + "'><strong>" + GameCatalog.esc(h.g.title) + "</strong></a> — " + GameCatalog.esc(h.g.genre) + ", " + GameCatalog.esc(h.g.era) + (h.g.playable ? " (playable now)" : " (concept)");
+        return "🎮 <a style='color:var(--neon)' href='game.html?id=" + h.g.id + (tierActive ? "&tier=" + tierQ : "") + "'><strong>" + GameCatalog.esc(h.g.title) + "</strong></a> — " + GameCatalog.esc(h.g.genre) + ", " + GameCatalog.esc(h.g.era) + (h.g.playable ? " (playable now)" : " (concept)");
       }).join("<br>");
   }
   $("aiGo").onclick = ask;
@@ -197,10 +225,10 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
     games.forEach(function(g){
       var a = document.createElement("a");
       a.className = "azcard";
-      a.href = "game.html?id=" + g.id;
+      a.href = "game.html?id=" + g.id + (tierActive ? "&tier=" + tierQ : "");
       a.innerHTML = GameCatalog.coverSVG(g) +
         '<div class="t">' + GameCatalog.esc(g.title) + "</div>" +
-        '<div class="s">' + GameCatalog.esc(g.genre) + " · " + (g.playable ? "▶ playable" : "💾 concept") + "</div>";
+        '<div class="s">' + GameCatalog.esc(g.genre) + " · " + GameCatalog.esc(GameCatalog.tierNameOf(g)) + " · " + (g.playable ? "▶ playable" : "💾 concept") + "</div>";
       grid.appendChild(a);
     });
     det.appendChild(grid);

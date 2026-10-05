@@ -421,6 +421,36 @@ GAMES.forEach(function (g) {
   g.cover = { palette: hashStr(g.id) % PALETTES.length, motif: g.genre || "arcade" };
 });
 
+/* ---------- graphics-era categories (front-page browse) ----------
+   The 6 renderer tiers double as browse categories: each game belongs to
+   one tier by its era string. BEYOND (5) is the showcase shelf holding
+   every playable game at max fidelity. Single source of truth — the
+   front page, archive filters, and detail-page badges all read this. */
+var ERA_TIERS = [
+  { tier: 0, name: "6-BIT",       blurb: "1970s arcade cabinets — chunky pixels, pure neon." },
+  { tier: 1, name: "32-BIT",      blurb: "8-bit and 16-bit classics — peak 2D, rich color." },
+  { tier: 2, name: "PLAYSTATION", blurb: "The 90s — bold early-3D style, dramatic and loud." },
+  { tier: 3, name: "64",          blurb: "Smooth and slick — clean shading, full effects." },
+  { tier: 4, name: "PS3",         blurb: "Modern HD — glow, particles, showcase quality." },
+  { tier: 5, name: "BEYOND",      blurb: "Everything maxed — every game at its absolute best." }
+];
+function tierIndexOf(g) {
+  var e = (g && g.era) || "";
+  if (e === "1970s Arcade") return 0;
+  if (e === "8-bit" || e === "16-bit") return 1;
+  if (e === "90s") return 2;
+  if (e === "Mobile") return 3;
+  if (e === "Modern") return 4;
+  if (e === "Future") return 5;
+  return 3; /* engine default tier */
+}
+function tierNameOf(g) { return ERA_TIERS[tierIndexOf(g)].name; }
+function gamesForTier(t) {
+  t = Math.max(0, Math.min(5, t | 0));
+  if (t === 5) return GAMES.slice(); /* BEYOND showcase: every playable game */
+  return GAMES.filter(function (g) { return tierIndexOf(g) === t; });
+}
+
 /* archive helpers */
 function allPlayable() { return GAMES; }
 function findGame(id) {
@@ -437,6 +467,8 @@ function letterOf(g) {
 root.GameCatalog = {
   GAMES: GAMES, coverSVG: coverSVG, conceptFor: conceptFor,
   allPlayable: allPlayable, findGame: findGame, letterOf: letterOf,
-  PALETTES: PALETTES, esc: esc, aiName: aiName, aiPersona: aiPersona
+  PALETTES: PALETTES, esc: esc, aiName: aiName, aiPersona: aiPersona,
+  ERA_TIERS: ERA_TIERS, tierIndexOf: tierIndexOf, tierNameOf: tierNameOf,
+  gamesForTier: gamesForTier
 };
 })(typeof window !== "undefined" ? window : globalThis);

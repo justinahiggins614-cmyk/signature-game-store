@@ -81,6 +81,17 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
     </div>
   </section>
 
+  <section class="card" id="eraBrowse">
+    <h2>PLAY BY ERA</h2>
+    <p style="color:var(--mut);margin-bottom:12px">Pick an era — the games of that era, played at that era's graphics. Your choice carries into the game.</p>
+    <div class="grid" id="eraGrid"><p style="color:var(--mut)">Loading eras…</p></div>
+  </section>
+
+  <section class="card" id="genreBrowse">
+    <h2>BROWSE BY GENRE</h2>
+    <div id="genreChips" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><p style="color:var(--mut)">Loading genres…</p></div>
+  </section>
+
   <section class="card" id="featured">
     <h2>FEATURED THIS VISIT</h2>
     <div class="grid" id="featuredGrid"><p style="color:var(--mut)">Loading the shelves…</p></div>
@@ -117,11 +128,47 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
       '<div class="b"><h3>' + GameCatalog.esc(g.title) + "</h3>" +
       '<div class="meta">' + GameCatalog.esc(g.id) + " · " + GameCatalog.esc(g.genre) + " · " + GameCatalog.esc(g.era) + "</div>" +
       '<p style="font-size:14px;color:#c9d6f2">' + GameCatalog.esc(g.description) + "</p>" +
-      '<div class="row"><span class="chip">' + (g.playable ? "▶ Playable on-site" : "💾 Download") + "</span>" +
+      '<div class="row"><span class="chip" style="background:var(--gold);color:#231600;font-weight:800">' + GameCatalog.esc(GameCatalog.tierNameOf(g)) + '</span>' +
+      '<span class="chip">' + (g.playable ? "▶ Playable on-site" : "💾 Download") + "</span>" +
       '<span class="chip">🤖 ' + GameCatalog.esc(GameCatalog.aiName(g.ai)) + "</span></div>" +
-      '<div class="row"><a class="btn" href="game.html?id=' + g.id + '">Open</a></div></div>';
+      '<div class="row"><a class="btn" href="game.html?id=' + g.id + "&tier=" + GameCatalog.tierIndexOf(g) + '">Open</a></div></div>';
     grid.appendChild(d);
   });
+
+  /* Play-by-era category cards: tapping one filters to that era's games
+     AND sets the graphics tier (persisted by GF.setTier). */
+  var eraGrid = document.getElementById("eraGrid");
+  eraGrid.innerHTML = "";
+  GameCatalog.ERA_TIERS.forEach(function(et){
+    var games = GameCatalog.gamesForTier(et.tier);
+    var covers = games.slice(0, 3).map(function(g){
+      return '<div style="flex:1;min-width:0">' + GameCatalog.coverSVG(g) + "</div>";
+    }).join("");
+    var card = document.createElement("div");
+    card.className = "gcard";
+    card.innerHTML =
+      '<div style="padding:14px 14px 6px"><h3 style="color:var(--gold);letter-spacing:2px">' + GameCatalog.esc(et.name) + "</h3>" +
+      '<p style="font-size:13px;color:var(--mut)">' + GameCatalog.esc(et.blurb) + "</p>" +
+      '<p style="font-size:13px;color:#fff;margin-top:6px"><strong>' + games.length + "</strong> game" + (games.length === 1 ? "" : "s") + "</p></div>" +
+      '<div style="display:flex;gap:6px;padding:0 14px">' + covers + "</div>" +
+      '<div class="b"><div class="row"><a class="btn" href="archive.html?tier=' + et.tier + '" onclick="try{GF.setTier(' + et.tier + ')}catch(e){}">Browse ' + GameCatalog.esc(et.name) + " →</a></div></div>";
+    eraGrid.appendChild(card);
+  });
+
+  /* Genre chips: second way to browse, into the archive's genre filter. */
+  var genres = {};
+  GameCatalog.GAMES.forEach(function(g){ genres[g.genre] = true; });
+  var gc = document.getElementById("genreChips");
+  gc.innerHTML = "";
+  Object.keys(genres).sort().forEach(function(gr){
+    var a = document.createElement("a");
+    a.className = "btn ghost";
+    a.style.cssText = "font-size:13px;padding:9px 16px;min-height:40px;margin:0";
+    a.href = "archive.html?genre=" + encodeURIComponent(gr);
+    a.textContent = gr.charAt(0).toUpperCase() + gr.slice(1);
+    gc.appendChild(a);
+  });
+
   GameCatalog.buildNetNav(document.getElementById("netnavList"));
 })();
 </script>

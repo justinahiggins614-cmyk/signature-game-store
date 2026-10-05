@@ -132,6 +132,10 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   var q = new URLSearchParams(location.search);
   var id = q.get("id") || "JAH-GAME-000007";
   var g = GameCatalog.findGame(id) || GameCatalog.GAMES[6];
+  /* the era chosen on the front page / archive carries through:
+     ?tier=N pre-selects the graphics dial (persisted by GF.setTier) */
+  var tierQ = parseInt(q.get("tier"), 10);
+  if (!isNaN(tierQ)) { try { GF.setTier(tierQ); } catch (e) {} }
   /* concept records (ids >= 14) are design documents, never bootable:
      never attempt GF.boot unless the key is actually registered */
   var isConcept = !!g.concept || !window.GameStore.get(g.key);
@@ -140,6 +144,7 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   $("gTitle").textContent = g.title;
   $("gMeta").textContent = g.id + " · " + g.genre + " · " + g.era;
   $("gChips").innerHTML =
+    '<span class="chip" style="background:var(--gold);color:#231600;font-weight:800">' + GameCatalog.esc(GameCatalog.tierNameOf(g)) + " ERA</span>" +
     '<span class="chip">' + (g.playable ? "▶ Playable on-site" : "💾 Concept download") + "</span>" +
     '<span class="chip">🎨 Cover #' + g.cover.palette + "-" + g.cover.motif + "</span>" +
     '<span class="chip">🤖 ' + GameCatalog.esc(GameCatalog.aiName(g.ai)) + "</span>";
@@ -288,7 +293,24 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
       };
       paintGfxBar();
     })();
-    start();
+    /* games before real game: no auto-boot on page load. The canvas shows
+       a ready splash until the player taps PLAY NOW — no sudden gameplay. */
+    function drawReady(){
+      var cv = $("gameCanvas");
+      try {
+        var ctx = cv.getContext("2d");
+        ctx.fillStyle = "#05070f"; ctx.fillRect(0, 0, cv.width, cv.height);
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#00f0ff"; ctx.font = "bold 24px system-ui,sans-serif";
+        var title = g.title.length > 22 ? g.title.slice(0, 21) + "…" : g.title;
+        ctx.fillText(title, cv.width / 2, cv.height / 2 - 46);
+        ctx.fillStyle = "#ffb300"; ctx.font = "bold 20px system-ui,sans-serif";
+        ctx.fillText("▶ TAP PLAY NOW", cv.width / 2, cv.height / 2 + 4);
+        ctx.fillStyle = "#9aa4b2"; ctx.font = "15px system-ui,sans-serif";
+        ctx.fillText("Graphics: " + GF.tierName(), cv.width / 2, cv.height / 2 + 38);
+      } catch (e) {}
+    }
+    drawReady();
   }
 
   // AI pal Q&A — honest, deterministic, grounded in this game's data
