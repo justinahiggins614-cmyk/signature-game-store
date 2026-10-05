@@ -11,7 +11,7 @@
     [6, "Signature Llama", "signature-llama"],
     [7, "The Signature AI Phone Book", "jah-ai-models"],
     [8, "Globally Rejustered Patent Catalog", "cyber-patent-catalog"],
-    [9, "Signature Spec Catalog Pending Patents", "signature-one-archive"],
+    [9, "Signature Spec Catalog Pending Patents", "signature-one-archive/specs.html"],
     [10, "The Signature PC System Depository", "jah-computer-systems"],
     [11, "The Signature Book Depository", "signature-books"],
     [12, "The Signature Comic Store", "signature-comics"],
@@ -28,15 +28,17 @@
     [23, "Signature Music Studio", "signature-ai-song-maker"],
     [24, "The Signature Mr Fix-It", "signature-fixit"],
     [25, "Signature University", "signature-university"],
-    [26, "The Signature Cyber Mega-Mall", "signature-cyber-mega-mall"],
-    [27, "The Signature 3D Print Mega Mall", "signature-3d-print"],
-    [28, "Signature Earth", "signature-earth"],
-    [29, "The Signature Flight School", "signature-flight-school"],
-    [31, "The Signature Website Creator", "signature-website-creator"],
-    [32, "The Signature Antivirus", "signature-antivirus"],
-    [33, "The Signature OS Updater", "signature-os-updater"],
-    [34, "Signature Space Mapping", "signature-space-mapping"],
-    [35, "The Signature Cookbook", "signature-cookbook"]
+    [26, "Signature Earth", "signature-earth"],
+    [27, "The Signature Flight School", "signature-flight-school"],
+    [29, "The Signature Website Creator", "signature-website-creator"],
+    [30, "The Signature Antivirus", "signature-antivirus"],
+    [31, "The Signature OS Updater", "signature-os-updater"],
+    [32, "Signature Space Mapping", "signature-space-mapping"],
+    [33, "The Signature Cookbook", "signature-cookbook"],
+    [34, "The Signature Spell Check", "signature-spell-check"],
+    [35, "The Signature Image Grid and Measure", "signature-image-grid-measure"],
+    [36, "The Signature Cyber Mega-Mall", "signature-cyber-mega-mall"],
+    [37, "The Signature 3D Print Mega Mall", "signature-3d-print"]
   ];
   function url(repo) { return "https://justinahiggins614-cmyk.github.io/" + repo + "/"; }
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
