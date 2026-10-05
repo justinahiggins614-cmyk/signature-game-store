@@ -67,6 +67,10 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
 
   <div class="card" id="playCard">
     <h2>PLAY IT HERE</h2>
+    <div style="text-align:center;margin-bottom:10px">
+      <button class="btn pink" id="playNowBtn" style="font-size:18px;padding:14px 34px">▶ PLAY NOW</button>
+    </div>
+    <div id="gfxBar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin:2px 0 12px" aria-label="Graphics era"></div>
     <div id="overlay">
       <canvas id="gameCanvas" width="420" height="640" aria-label="Game canvas"></canvas>
       <div id="bigMsg"><h3 id="bigTitle"></h3><p id="bigText"></p><button class="btn" id="againBtn">Play again</button></div>
@@ -128,7 +132,9 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   var q = new URLSearchParams(location.search);
   var id = q.get("id") || "JAH-GAME-000007";
   var g = GameCatalog.findGame(id) || GameCatalog.GAMES[6];
-  var isConcept = !!g.concept;
+  /* concept records (ids >= 14) are design documents, never bootable:
+     never attempt GF.boot unless the key is actually registered */
+  var isConcept = !!g.concept || !window.GameStore.get(g.key);
   document.title = g.title + " — The Signature Game Store";
 
   $("gTitle").textContent = g.title;
@@ -149,7 +155,7 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   if (isConcept) {
     $("playCard").style.display = "none";
     $("conceptCard").style.display = "block";
-    var c = g.concept;
+    var c = g; /* the record itself carries the concept fields (g.concept is just the flag) */
     $("conceptText").innerHTML =
       "<strong>Title:</strong> " + GameCatalog.esc(c.title) + "<br><br>" +
       "<strong>Description:</strong> " + GameCatalog.esc(c.description) + "<br><br>" +
@@ -236,10 +242,14 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
     function start(){
       $("bigMsg").classList.remove("show");
       if (handle) handle.stop();
-      handle = GF.boot(g.key, $("gameCanvas"), {
-        onOver: function(msg){ showEnd("GAME OVER", msg); },
-        onWin: function(msg){ showEnd("YOU WIN!", msg); }
-      });
+      try {
+        handle = GF.boot(g.key, $("gameCanvas"), {
+          onOver: function(msg){ showEnd("GAME OVER", msg); },
+          onWin: function(msg){ showEnd("YOU WIN!", msg); }
+        });
+      } catch(e){
+        showEnd("Couldn't start", "This one isn't playable on-site yet — the download below still works.");
+      }
     }
     function showEnd(title, msg){
       $("bigTitle").textContent = title;
@@ -247,6 +257,37 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
       $("bigMsg").classList.add("show");
     }
     $("againBtn").onclick = start;
+    $("playNowBtn").onclick = function(){
+      start();
+      try { $("gameCanvas").scrollIntoView({behavior:"smooth", block:"center"}); } catch(e){}
+    };
+    /* graphics era tier selector — same game, six eras; choice remembered */
+    (function(){
+      var bar = $("gfxBar");
+      var label = document.createElement("span");
+      label.style.cssText = "color:var(--gold);font-weight:800;font-size:13px;letter-spacing:1px";
+      label.textContent = "GRAPHICS:";
+      bar.appendChild(label);
+      GF.tiers().forEach(function(name, i){
+        var b = document.createElement("button");
+        b.className = "btn ghost";
+        b.style.cssText = "min-height:40px;padding:8px 13px;font-size:12px;margin:2px";
+        b.textContent = name;
+        b.setAttribute("aria-label", "Graphics era " + name);
+        b.onclick = function(){ GF.setTier(i); paintGfxBar(); };
+        b.dataset.tier = i;
+        bar.appendChild(b);
+      });
+      window.paintGfxBar = function(){
+        var cur = GF.tier();
+        Array.prototype.forEach.call(bar.querySelectorAll("button"), function(b){
+          var on = (+b.dataset.tier) === cur;
+          b.style.background = on ? "var(--neon)" : "transparent";
+          b.style.color = on ? "#04121a" : "var(--neon)";
+        });
+      };
+      paintGfxBar();
+    })();
     start();
   }
 

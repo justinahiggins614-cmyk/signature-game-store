@@ -112,110 +112,251 @@ var GAMES = [
 /* ---------- deterministic SVG covers ---------- */
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
+/* ---------- deterministic painted covers (comic-cover bar) ----------
+   Same game = same cover (seeded), fast pure-SVG, no external assets.
+   Painted look: layered gradients, nebulas, glow, rim light, depth. */
 function coverSVG(game, w, h) {
   w = w || 300; h = h || 400;
   var pal = PALETTES[hashStr(game.id) % PALETTES.length];
   var rng = mulberry32(hashStr(game.id + game.title));
+  var uid = "c" + String(game.id).replace(/\D/g, "").slice(-6);
+  var n = pal.neon, wv = pal.warm, fg = pal.fg, bg1 = pal.bg1, bg2 = pal.bg2;
   var s = "";
-  s += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="' + w + '" height="' + h + '" role="img" aria-label="' + esc(game.title) + ' cover">';
-  s += '<defs><linearGradient id="g' + game.id.slice(-6) + '" x1="0" y1="0" x2="0" y2="1">' +
-       '<stop offset="0" stop-color="' + pal.bg2 + '"/><stop offset="1" stop-color="' + pal.bg1 + '"/></linearGradient></defs>';
-  s += '<rect width="300" height="400" fill="url(#g' + game.id.slice(-6) + ')"/>';
-  // starfield
-  for (var i = 0; i < 40; i++) {
-    s += '<circle cx="' + (rng() * 300).toFixed(0) + '" cy="' + (rng() * 400).toFixed(0) + '" r="' + (rng() * 1.6 + 0.4).toFixed(1) + '" fill="' + pal.fg + '" opacity="' + (rng() * 0.6 + 0.2).toFixed(2) + '"/>';
+  function R(x, y, ww, hh, rx, fill, op) { return '<rect x="' + x + '" y="' + y + '" width="' + ww + '" height="' + hh + '" rx="' + (rx || 0) + '" fill="' + fill + '" opacity="' + (op == null ? 1 : op) + '"/>'; }
+  function C(cx, cy, r, fill, op) { return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + fill + '" opacity="' + (op == null ? 1 : op) + '"/>'; }
+  function E(cx, cy, rx, ry, fill, op) { return '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="' + fill + '" opacity="' + (op == null ? 1 : op) + '"/>'; }
+  function P(pts, fill, op) { return '<polygon points="' + pts + '" fill="' + fill + '" opacity="' + (op == null ? 0.95 : op) + '"/>'; }
+  function T(x, y, txt, size, fill, extra) { return '<text x="' + x + '" y="' + y + '" text-anchor="middle" font-family="sans-serif" ' + (extra || "") + ' font-size="' + size + '" fill="' + fill + '">' + esc(txt) + "</text>"; }
+  function G(id, stops) {
+    var o = '<linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1">';
+    for (var i = 0; i < stops.length; i++) o += '<stop offset="' + stops[i][0] + '" stop-color="' + stops[i][1] + '"' + (stops[i][2] ? ' stop-opacity="' + stops[i][2] + '"' : "") + "/>";
+    return o + "</linearGradient>";
   }
-  s += motif(game.genre, pal, rng);
-  // title plate
-  s += '<rect x="0" y="296" width="300" height="104" fill="rgba(0,0,0,0.55)"/>';
-  s += '<text x="150" y="330" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="21" fill="' + pal.neon + '">' + esc(game.title.toUpperCase()) + '</text>';
-  s += '<text x="150" y="354" text-anchor="middle" font-family="sans-serif" font-size="12" fill="' + pal.fg + '">' + esc(game.era) + ' · ' + esc(game.genre) + '</text>';
-  s += '<text x="150" y="378" text-anchor="middle" font-family="monospace" font-size="11" fill="' + pal.warm + '">' + esc(game.id) + '</text>';
-  s += '<rect x="0" y="0" width="300" height="400" fill="none" stroke="' + pal.neon + '" stroke-width="4" opacity="0.7"/>';
-  s += '</svg>';
+  function RG(id, cx, cy, r, stops) {
+    var o = '<radialGradient id="' + id + '" cx="' + cx + '" cy="' + cy + '" r="' + r + '" gradientUnits="userSpaceOnUse">';
+    for (var j = 0; j < stops.length; j++) o += '<stop offset="' + stops[j][0] + '" stop-color="' + stops[j][1] + '"' + (stops[j][2] ? ' stop-opacity="' + stops[j][2] + '"' : "") + "/>";
+    return o + "</radialGradient>";
+  }
+  var H = { R: R, C: C, E: E, P: P, T: T, G: G, RG: RG, rng: rng, uid: uid, pal: pal, n: n, wv: wv, fg: fg, bg1: bg1, bg2: bg2 };
+
+  s += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" width="' + w + '" height="' + h + '" role="img" aria-label="' + esc(game.title) + ' cover">';
+  s += "<defs>";
+  s += G(uid + "sky", [[0, bg2], [0.55, bg1], [1, "#04060f"]]);
+  s += RG(uid + "neb1", 90, 120, 140, [[0, n, 0.55], [1, n, 0]]);
+  s += RG(uid + "neb2", 225, 205, 150, [[0, wv, 0.42], [1, wv, 0]]);
+  s += G(uid + "plate", [[0, "#05070f", 0.94], [1, "#05070f", 0.30]]);
+  s += '<filter id="' + uid + 'b6" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6"/></filter>';
+  s += '<filter id="' + uid + 'b12" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="12"/></filter>';
+  s += "</defs>";
+  s += R(0, 0, 300, 400, 0, "url(#" + uid + "sky)");
+  s += E(90, 120, 140, 115, "url(#" + uid + "neb1)", 0.5);
+  s += E(225, 205, 150, 120, "url(#" + uid + "neb2)", 0.45);
+  var i, sx, sy, sr, so;
+  for (i = 0; i < 70; i++) {
+    sx = (rng() * 300).toFixed(0); sy = (rng() * 300).toFixed(0);
+    sr = (rng() * 1.5 + 0.3).toFixed(1); so = (rng() * 0.6 + 0.25).toFixed(2);
+    if (rng() < 0.16) s += C(sx, sy, (+sr + 3).toFixed(1), fg, 0.22);
+    s += C(sx, sy, sr, fg, so);
+  }
+  s += paintedMotif(game.genre, H);
+  /* cinematic light streaks over everything */
+  s += P("30,400 80,400 210,0 160,0", "#ffffff", 0.05);
+  s += P("190,400 222,400 300,110 300,70", n, 0.07);
+  /* title plate */
+  s += R(0, 292, 300, 108, 0, "url(#" + uid + "plate)");
+  s += T(150, 330, game.title.toUpperCase(), 21, n, 'font-weight="bold" letter-spacing="2"');
+  s += T(150, 354, game.era + " · " + game.genre, 12, fg, 'letter-spacing="1"');
+  s += '<text x="150" y="378" text-anchor="middle" font-family="monospace" font-size="11" fill="' + wv + '">' + esc(game.id) + "</text>";
+  s += '<rect x="2" y="2" width="296" height="396" fill="none" stroke="' + n + '" stroke-width="4" opacity="0.8"/>';
+  s += '<rect x="9" y="9" width="282" height="382" fill="none" stroke="' + fg + '" stroke-width="1" opacity="0.35"/>';
+  s += "</svg>";
   return s;
 }
 
-function motif(genre, pal, rng) {
-  var n = pal.neon, wv = pal.warm, fg = pal.fg, s = "";
-  function poly(pts, fill, op) { return '<polygon points="' + pts + '" fill="' + fill + '" opacity="' + (op || 0.9) + '"/>'; }
+function paintedMotif(genre, H) {
+  var R = H.R, C = H.C, E = H.E, P = H.P, T = H.T, rng = H.rng, uid = H.uid;
+  var n = H.n, wv = H.wv, fg = H.fg;
+  var b6 = ' filter="url(#' + uid + 'b6)"', b12 = ' filter="url(#' + uid + 'b12)"';
+  var s = "", i;
+  function glowShape(shape) { return shape.replace("/>", b6 + "/>"); }
+
   if (genre === "shooter" || genre === "explorer") {
-    // starship + lasers + planet
-    s += '<circle cx="228" cy="86" r="44" fill="' + wv + '" opacity="0.85"/>';
-    s += '<circle cx="228" cy="86" r="54" fill="none" stroke="' + wv + '" stroke-width="3" opacity="0.5"/>';
-    s += poly("150,210 138,238 162,238", n, 0.95);
-    s += '<rect x="144" y="180" width="12" height="34" rx="5" fill="' + n + '"/>';
-    s += '<rect x="128" y="206" width="44" height="10" rx="4" fill="' + fg + '" opacity="0.9"/>';
-    for (var i = 0; i < 4; i++) s += '<rect x="' + (100 + i * 26) + '" y="' + (120 + (i % 2) * 30) + '" width="4" height="34" fill="' + wv + '" opacity="0.8"/>';
+    /* ringed planet looming over a hero starship mid-barrage */
+    s += C(232, 84, 42, wv, 0.92);
+    s += C(220, 74, 42, H.bg1, 0.38);
+    s += '<ellipse cx="232" cy="84" rx="60" ry="15" fill="none" stroke="' + wv + '" stroke-width="4" opacity="0.55"/>';
+    s += C(150, 242, 30, wv, 0.75).replace("/>", b12 + "/>");
+    s += P("150,150 130,198 150,188 170,198", n);
+    s += P("150,150 141,198 150,190", fg, 0.55);
+    s += P("130,198 104,230 132,222", n, 0.85);
+    s += P("170,198 196,230 168,222", n, 0.85);
+    s += E(150, 172, 8, 11, fg, 0.95);
+    s += C(152, 168, 2.5, "#ffffff", 0.9);
+    for (i = 0; i < 3; i++) {
+      var lx = 118 + i * 32;
+      s += R(lx, 56, 6, 96, 3, wv, 0.85).replace("/>", b6 + "/>");
+    }
+    for (i = 0; i < 8; i++) s += C((rng() * 300).toFixed(0), (120 + rng() * 160).toFixed(0), (rng() * 2 + 1).toFixed(1), fg, 0.5);
   } else if (genre === "racer") {
-    s += poly("110,300 190,300 235,120 65,120", "#222", 1);
-    s += poly("146,300 154,300 152,120 148,120", fg, 0.8);
-    s += '<rect x="128" y="220" width="44" height="26" rx="8" fill="' + n + '"/>';
-    s += '<rect x="134" y="226" width="32" height="12" rx="4" fill="' + pal.bg1 + '" opacity="0.8"/>';
-    s += '<circle cx="136" cy="250" r="7" fill="#111"/><circle cx="164" cy="250" r="7" fill="#111"/>';
-    s += '<rect x="60" y="60" width="180" height="26" rx="6" fill="rgba(0,0,0,0.5)"/>';
+    /* night grand prix: perspective road, hero car, headlight beams */
+    s += E(150, 150, 130, 20, n, 0.28).replace("/>", b12 + "/>");
+    s += P("50,400 250,400 188,148 112,148", "#0e0e18");
+    s += P("50,400 112,148 122,148 62,400", n, 0.85);
+    s += P("250,400 188,148 178,148 238,400", n, 0.85);
+    for (i = 0; i < 5; i++) { var dy = 190 + i * 42, dw = 4 + i * 2.4; s += R(150 - dw / 2, dy, dw, 16 - i * 2, 2, fg, 0.75); }
+    s += E(150, 330, 56, 11, "#000000", 0.55);
+    s += P("196,296 268,238 268,340", wv, 0.22).replace("/>", b6 + "/>");
+    s += R(100, 288, 100, 36, 14, n);
+    s += R(100, 288, 100, 14, 14, fg, 0.35);
+    s += R(126, 272, 48, 24, 9, "#0a0f22", 0.95);
+    s += R(132, 274, 18, 20, 5, fg, 0.5);
+    s += C(120, 326, 14, "#0a0a0a"); s += C(120, 326, 6, wv);
+    s += C(180, 326, 14, "#0a0a0a"); s += C(180, 326, 6, wv);
+    for (i = 0; i < 4; i++) s += R(20, 250 + i * 26, 52 - i * 8, 4, 2, fg, 0.28);
   } else if (genre === "platformer") {
-    for (var p = 0; p < 4; p++) s += '<rect x="' + (20 + p * 72) + '" y="' + (250 - p * 42) + '" width="64" height="14" rx="6" fill="' + n + '" opacity="0.85"/>';
-    s += '<rect x="142" y="120" width="26" height="34" rx="8" fill="' + wv + '"/>';
-    s += '<circle cx="155" cy="112" r="11" fill="' + wv + '"/>';
-    for (var c = 0; c < 3; c++) s += '<circle cx="' + (60 + c * 90) + '" cy="' + (200 - c * 40) + '" r="9" fill="' + wv + '" stroke="' + fg + '" stroke-width="2"/>';
+    /* floating islands, caped hopper, star coins */
+    function island(x, y, w) {
+      var o = "";
+      o += E(x, y + 52, w * 0.55, 10, n, 0.35).replace("/>", b6 + "/>");
+      o += P(x - w / 2 + "," + y + " " + (x + w / 2) + "," + y + " " + (x + w * 0.28) + "," + (y + 52) + " " + (x - w * 0.28) + "," + (y + 52), "#5a4632");
+      o += P(x - w * 0.28 + "," + (y + 52) + " " + (x + w * 0.28) + "," + (y + 52) + " " + x + "," + (y + 66), "#3a2d20");
+      o += R(x - w / 2, y - 12, w, 15, 7, n);
+      o += R(x - w / 2, y - 12, w, 6, 3, fg, 0.5);
+      return o;
+    }
+    s += island(80, 250, 110);
+    s += island(215, 185, 90);
+    s += island(105, 120, 70);
+    s += R(128, 62, 6, 46, 3, fg, 0.9);
+    s += P("134,62 134,84 162,73", n);
+    var coins = [[150, 150], [200, 110], [70, 190]];
+    for (i = 0; i < coins.length; i++) {
+      s += C(coins[i][0], coins[i][1], 10, wv, 0.9).replace("/>", b6 + "/>");
+      s += C(coins[i][0], coins[i][1], 9, wv);
+      s += C(coins[i][0], coins[i][1], 4.5, "#fff8e0");
+    }
+    s += E(150, 248, 24, 7, "#000000", 0.4);
+    s += C(150, 222, 21, wv);
+    s += E(150, 230, 13, 9, fg, 0.45);
+    s += C(157, 215, 7.5, "#ffffff"); s += C(159, 216, 3.6, "#111111"); s += C(156, 213, 2, "#ffffff");
+    s += P("132,210 112,196 128,226", n, 0.9);
+    s += R(138, 240, 10, 12, 4, "#7a5a20"); s += R(154, 240, 10, 12, 4, "#7a5a20");
   } else if (genre === "puzzle") {
-    var cols = [n, wv, fg, "#ff6b9d"];
-    for (var r = 0; r < 4; r++) for (var q = 0; q < 4; q++) {
-      var cx = 70 + q * 44, cy = 90 + r * 44;
-      s += poly(cx + "," + (cy - 14) + " " + (cx + 13) + "," + cy + " " + cx + "," + (cy + 14) + " " + (cx - 13) + "," + cy, cols[(r + q) % 4], 0.9);
+    /* faceted gems with sparkle */
+    var gems = [[90, 150, n], [160, 120, wv], [220, 170, "#ff6b9d"], [120, 220, fg], [195, 235, "#7dffce"]];
+    for (i = 0; i < gems.length; i++) {
+      var gx = gems[i][0], gy = gems[i][1], gc = gems[i][2], gr = 24 + (i % 2) * 6;
+      s += P(gx + "," + gy + " " + (gx + gr) + "," + (gy + 8) + " " + gx + "," + (gy + 18) + " " + (gx - gr) + "," + (gy + 8), gc, 0.3).replace("/>", b12 + "/>");
+      s += P(gx + "," + (gy - gr) + " " + (gx + gr * 0.8) + "," + gy + " " + gx + "," + (gy + gr) + " " + (gx - gr * 0.8) + "," + gy, gc, 0.95);
+      s += P(gx + "," + (gy - gr) + " " + (gx + gr * 0.8) + "," + gy + " " + gx + "," + gy, "#ffffff", 0.35);
+      s += P((gx - gr * 0.8) + "," + gy + " " + gx + "," + (gy + gr) + " " + gx + "," + gy, "#000000", 0.35);
+      s += R(gx - 2, gy - gr - 10, 4, 20, 2, "#ffffff", 0.9);
+      s += R(gx - 10, gy - gr - 2, 20, 4, 2, "#ffffff", 0.9);
     }
   } else if (genre === "combat") {
-    s += '<circle cx="150" cy="170" r="70" fill="none" stroke="' + n + '" stroke-width="6" opacity="0.9"/>';
-    s += '<circle cx="150" cy="170" r="8" fill="' + wv + '"/>';
-    s += '<rect x="147" y="96" width="6" height="30" fill="' + n + '"/>';
-    s += '<rect x="147" y="214" width="6" height="30" fill="' + n + '"/>';
-    s += '<rect x="76" y="167" width="30" height="6" fill="' + n + '"/>';
-    s += '<rect x="194" y="167" width="30" height="6" fill="' + n + '"/>';
+    /* crosshair over a night raid */
+    for (i = 0; i < 3; i++) s += P((40 + i * 30) + ",400 " + (90 + i * 30) + ",400 " + (150 + i * 20) + ",180", fg, 0.06);
+    s += '<circle cx="150" cy="185" r="66" fill="none" stroke="' + n + '" stroke-width="7" opacity="0.9"/>';
+    s += '<circle cx="150" cy="185" r="66" fill="none" stroke="' + n + '" stroke-width="14" opacity="0.3"' + b6 + "/>";
+    s += C(150, 185, 9, wv);
+    s += R(146, 108, 8, 30, 3, n); s += R(146, 232, 8, 30, 3, n);
+    s += R(73, 181, 30, 8, 3, n); s += R(197, 181, 30, 8, 3, n);
+    var chev = [[90, 260], [150, 275], [210, 260]];
+    for (i = 0; i < chev.length; i++) {
+      s += '<polygon points="' + chev[i][0] + ',' + chev[i][1] + " " + (chev[i][0] + 26) + "," + (chev[i][1] - 16) + " " + (chev[i][0] + 52) + "," + chev[i][1] + " " + (chev[i][0] + 52) + "," + (chev[i][1] + 10) + " " + (chev[i][0] + 26) + "," + (chev[i][1] - 6) + " " + chev[i][0] + "," + (chev[i][1] + 10) + '" fill="#14141f" stroke="' + n + '" stroke-width="2.5" opacity="0.95"/>';
+    }
+    s += C(110, 150, 12, wv, 0.9).replace("/>", b6 + "/>");
+    s += C(110, 150, 5, "#ffffff");
   } else if (genre === "maze") {
-    s += '<rect x="60" y="60" width="180" height="180" fill="none" stroke="' + n + '" stroke-width="5"/>';
-    for (var m = 0; m < 6; m++) {
-      var x1 = 60 + rng() * 160, y1 = 60 + rng() * 160;
-      s += '<rect x="' + x1.toFixed(0) + '" y="' + y1.toFixed(0) + '" width="' + (20 + rng() * 60).toFixed(0) + '" height="8" fill="' + n + '" opacity="0.7"/>';
+    /* neon labyrinth plate with a blazing exit core */
+    s += R(46, 86, 208, 208, 12, "#0d1226");
+    s += R(46, 86, 208, 7, 3, n, 0.85); s += R(46, 86, 7, 208, 3, n, 0.5);
+    var walls = [[70, 110, 90, 12], [180, 110, 54, 12], [70, 150, 12, 80], [120, 150, 90, 12], [160, 190, 12, 80], [110, 230, 100, 12]];
+    for (i = 0; i < walls.length; i++) {
+      s += R(walls[i][0], walls[i][1], walls[i][2], walls[i][3], 4, n, 0.72);
+      s += R(walls[i][0], walls[i][1], walls[i][2], 3, 2, fg, 0.6);
     }
-    s += '<circle cx="230" cy="230" r="10" fill="' + wv + '"/>';
+    var path = [[86, 262], [86, 200], [140, 200], [140, 168], [200, 168], [200, 210], [228, 210]];
+    for (i = 0; i < path.length; i++) s += C(path[i][0], path[i][1], 4, wv, 0.85);
+    s += C(232, 236, 17, wv, 0.9).replace("/>", b12 + "/>");
+    s += C(232, 236, 16, wv); s += C(232, 236, 7, "#ffffff");
   } else if (genre === "miner") {
-    for (var a = 0; a < 6; a++) {
-      var ax = 50 + rng() * 200, ay = 60 + rng() * 150;
-      s += poly(ax + "," + ay + " " + (ax + 26) + "," + (ay + 8) + " " + (ax + 14) + "," + (ay + 30), "#8a6f4d", 0.95);
-      s += '<circle cx="' + (ax + 13).toFixed(0) + '" cy="' + (ay + 14).toFixed(0) + '" r="4" fill="' + wv + '"/>';
+    /* ore-rich belt, mining ship, tractor beam */
+    var rocks = [[70, 150, 30], [160, 120, 38], [240, 170, 28], [110, 220, 34], [210, 240, 26]];
+    for (i = 0; i < rocks.length; i++) {
+      var ax = rocks[i][0], ay = rocks[i][1], ar = rocks[i][2];
+      var pts = [];
+      for (var k = 0; k < 7; k++) { var aa = k / 7 * 6.283, rr = ar * (0.8 + rng() * 0.4); pts.push((ax + Math.cos(aa) * rr).toFixed(0) + "," + (ay + Math.sin(aa) * rr).toFixed(0)); }
+      s += P(pts.join(" "), "#8a6f4d", 0.95);
+      s += C(ax - ar * 0.25, ay - ar * 0.2, ar * 0.28, "#5a4632", 0.8);
+      s += C(ax + ar * 0.3, ay + ar * 0.25, 4, wv, 0.95).replace("/>", b6 + "/>");
     }
-    s += poly("150,250 138,278 162,278", n, 0.95);
-    s += '<rect x="144" y="220" width="12" height="34" rx="5" fill="' + n + '"/>';
+    s += P("150,108 118,250 182,250", fg, 0.16).replace("/>", b6 + "/>");
+    s += P("150,84 138,112 162,112", n);
+    s += R(143, 66, 14, 24, 6, n); s += E(150, 62, 9, 7, fg, 0.9);
+    for (i = 0; i < 6; i++) s += C((60 + rng() * 180).toFixed(0), (250 + rng() * 40).toFixed(0), 2.5, wv, 0.8);
   } else if (genre === "defense") {
-    s += '<path d="M40,260 Q150,180 260,260" fill="none" stroke="' + fg + '" stroke-width="10" opacity="0.5"/>';
-    for (var t = 0; t < 3; t++) {
-      var tx = 80 + t * 70;
-      s += '<rect x="' + tx + '" y="150" width="26" height="60" rx="6" fill="' + n + '" opacity="0.9"/>';
-      s += '<circle cx="' + (tx + 13) + '" cy="142" r="12" fill="' + wv + '"/>';
+    /* the winding road at dusk, towers hot */
+    s += '<path d="M30,300 Q150,215 270,300" fill="none" stroke="' + fg + '" stroke-width="17" opacity="0.32"/>';
+    s += '<path d="M30,300 Q150,215 270,300" fill="none" stroke="' + fg + '" stroke-width="3" stroke-dasharray="12 10" opacity="0.6"/>';
+    var tws = [[80, 170], [150, 150], [220, 170]];
+    for (i = 0; i < tws.length; i++) {
+      var tx = tws[i][0], ty = tws[i][1];
+      s += '<circle cx="' + tx + '" cy="' + (ty + 28) + '" r="34" fill="none" stroke="' + fg + '" stroke-width="2" opacity="0.28"/>';
+      s += R(tx - 15, ty, 30, 56, 8, "#1a2340");
+      s += R(tx - 15, ty, 30, 10, 5, n, 0.8);
+      s += C(tx, ty - 8, 14, n);
+      s += C(tx, ty - 8, 14, n, 0.4).replace("/>", b6 + "/>");
+      s += R(tx - 3, ty - 34, 6, 28, 3, fg);
+      s += C(tx, ty - 36, 6, wv, 0.95).replace("/>", b6 + "/>");
     }
+    for (i = 0; i < 5; i++) s += C((60 + i * 44).toFixed(0), (292 - Math.sin(i * 0.9) * 22).toFixed(0), 6, "#ff6b6b", 0.9);
   } else if (genre === "pong") {
-    s += '<rect x="52" y="120" width="12" height="80" rx="6" fill="' + n + '"/>';
-    s += '<rect x="236" y="120" width="12" height="80" rx="6" fill="' + n + '"/>';
-    s += '<circle cx="150" cy="160" r="11" fill="' + wv + '"/>';
-    s += '<rect x="148" y="60" width="4" height="180" fill="' + fg + '" opacity="0.4"/>';
+    /* the eternal duel, dramatic */
+    s += T(150, 130, "7", 72, fg, 'font-weight="bold" opacity="0.16"');
+    for (i = 0; i < 8; i++) s += R(148, 60 + i * 30, 4, 16, 2, fg, 0.4);
+    s += R(52, 150, 15, 96, 7, n, 0.35).replace("/>", b6 + "/>");
+    s += R(52, 150, 15, 96, 7, n); s += R(52, 150, 5, 96, 2, fg, 0.7);
+    s += R(233, 150, 15, 96, 7, wv, 0.35).replace("/>", b6 + "/>");
+    s += R(233, 150, 15, 96, 7, wv); s += R(243, 150, 5, 96, 2, "#fff8e0", 0.7);
+    for (i = 0; i < 4; i++) s += R(30 - i * 6, 168 + i * 8, 22, 5, 2, n, 0.3 - i * 0.06);
+    for (i = 4; i >= 0; i--) s += C(150 - i * 16, 198, 10 - i * 1.4, wv, 0.25 + (4 - i) * 0.15);
+    s += C(150, 198, 11, wv).replace("/>", b6 + "/>");
+    s += C(150, 198, 11, wv); s += C(147, 195, 3.5, "#ffffff");
   } else if (genre === "flyer") {
-    for (var g = 0; g < 3; g++) {
-      var gx = 60 + g * 80;
-      s += '<rect x="' + gx + '" y="60" width="34" height="90" fill="' + n + '" opacity="0.85"/>';
-      s += '<rect x="' + gx + '" y="200" width="34" height="80" fill="' + n + '" opacity="0.85"/>';
+    /* dusk sky, glowing gates, daredevil hopper */
+    s += R(0, 60, 300, 90, 0, wv, 0.10); s += R(0, 150, 300, 80, 0, n, 0.10);
+    var gates = [70, 150, 230];
+    for (i = 0; i < gates.length; i++) {
+      var gx2 = gates[i];
+      s += R(gx2, 66, 32, 84, 6, n, 0.9); s += R(gx2, 66, 32, 10, 5, fg, 0.5);
+      s += R(gx2, 196, 32, 84, 6, n, 0.9); s += R(gx2, 260, 32, 10, 5, fg, 0.5);
+      s += R(gx2, 66, 32, 84, 6, n, 0.35).replace("/>", b6 + "/>");
+      s += T(gx2 + 16, 178, String(i + 1), 20, fg, 'font-weight="bold" opacity="0.85"');
     }
-    s += '<ellipse cx="150" cy="176" rx="20" ry="14" fill="' + wv + '"/>';
-    s += poly("130,176 112,166 112,186", wv, 1);
-    s += '<circle cx="158" cy="172" r="3" fill="#111"/>';
-  } else { // arcade default: serpent/bricks vibe
-    var px = 70, py = 200;
-    s += '<circle cx="230" cy="100" r="16" fill="' + wv + '"/>';
-    for (var sg = 0; sg < 8; sg++) {
-      s += '<rect x="' + px + '" y="' + py + '" width="22" height="22" rx="7" fill="' + (sg % 2 ? n : fg) + '" opacity="0.92"/>';
-      px += (sg % 3 === 2 ? -24 : 24); py += (sg % 2 ? 24 : -6);
-      px = Math.max(50, Math.min(230, px)); py = Math.max(80, Math.min(260, py));
+    for (i = 0; i < 5; i++) s += R(0, 100 + i * 38, 60, 3, 1, fg, 0.25);
+    s += E(150, 200, 30, 8, "#000000", 0.3);
+    s += E(150, 186, 21, 14, wv);
+    s += P("132,182 108,168 112,192", wv);
+    s += P("168,182 190,172 186,194", "#c78a1e");
+    s += C(158, 181, 4, "#111111"); s += C(157, 180, 1.4, "#ffffff");
+  } else {
+    /* arcade default: neon serpent coiled around its orb */
+    var segs = 8, px2 = 80, py2 = 210;
+    for (i = 0; i < segs; i++) {
+      var rr2 = 15 - i * 1.1;
+      s += C(px2.toFixed(0), py2.toFixed(0), rr2.toFixed(1), n, 0.35).replace("/>", b6 + "/>");
+      s += C(px2.toFixed(0), py2.toFixed(0), rr2.toFixed(1), n);
+      s += C((px2 - rr2 * 0.3).toFixed(0), (py2 - rr2 * 0.3).toFixed(0), (rr2 * 0.4).toFixed(1), fg, 0.5);
+      px2 += (i % 3 === 2 ? -26 : 26); py2 += (i % 2 ? 26 : -8);
+      px2 = Math.max(56, Math.min(244, px2)); py2 = Math.max(90, Math.min(262, py2));
     }
+    s += C(80, 210, 13, wv, 0.85).replace("/>", b12 + "/>");
+    s += C(80, 210, 12, wv); s += C(80, 210, 5, "#fff8e0");
+    s += C(66, 198, 5, "#ffffff"); s += C(94, 198, 5, "#ffffff");
+    s += C(66, 199, 2.4, "#111111"); s += C(94, 199, 2.4, "#111111");
+    for (i = 0; i < 2; i++) for (var q2 = 0; q2 < 5; q2++)
+      s += R(52 + q2 * 50, 96 + i * 24, 42, 18, 5, [n, wv, fg, "#ff6b9d", "#7dffce"][(i * 5 + q2) % 5], 0.9);
   }
   return s;
 }
