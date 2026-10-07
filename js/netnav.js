@@ -46,7 +46,8 @@
     if (!el) return;
     el.innerHTML = SITES.map(function (s) {
       return '<li><a href="' + url(s[2]) + '">' + s[0] + ". " + esc(s[1]) + "</a></li>";
-    }).join("");
+    }).join("") +
+    '<li><span class="youarehere">28 The Signature Game Store \u2014 YOU ARE HERE</span></li>';
   }
   window.JahNet = { sites: SITES, url: url, buildNetNav: buildNetNav };
   if (window.GameCatalog) window.GameCatalog.buildNetNav = buildNetNav; // bridge

@@ -47,6 +47,65 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   <a href="archive.html">🎮 Game Archive</a>
 </nav>
 
+<div class="wrap">
+<div class="card"><div class="stage">
+    <div class="cover" id="coverBox"></div>
+    <div class="info">
+      <h1 id="gTitle">Loading…</h1>
+      <p id="gMeta" style="color:var(--mut);margin:6px 0"></p>
+      <div id="gChips"></div>
+      <p id="gDesc" style="margin:12px 0;font-size:17px"></p>
+      <p style="margin:8px 0"><strong style="color:var(--gold)">Controls:</strong> <span id="gControls"></span></p>
+      <p style="margin:8px 0"><strong style="color:var(--gold)">How to win:</strong> <span id="gWin"></span></p>
+      <div>
+        <button class="btn" id="readBtn">🔊 Read aloud</button>
+        <button class="btn ghost" id="copyBtn">⧉ Copy game file</button>
+        <button class="btn ghost" id="dlBtn">⬇ Download game (.html)</button>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="card" id="playCard">
+    <h2>PLAY IT HERE</h2>
+    <div style="text-align:center;margin-bottom:10px">
+      <button class="btn pink" id="playNowBtn" style="font-size:18px;padding:14px 34px">▶ PLAY NOW</button>
+    </div>
+    <div id="gfxBar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin:2px 0 12px" aria-label="Graphics era"></div>
+    <div id="overlay">
+      <canvas id="gameCanvas" width="420" height="640" aria-label="Game canvas"></canvas>
+      <div id="bigMsg"><h3 id="bigTitle"></h3><p id="bigText"></p><button class="btn" id="againBtn">Play again</button></div>
+    </div>
+    <p style="color:var(--mut);margin-top:10px;font-size:14px">Keyboard: arrows/WASD + Space · Touch: swipe to move, tap to act. Sound: on.</p>
+  </div>
+
+  <div class="card" id="conceptCard" style="display:none">
+    <h2>GAME CONCEPT</h2>
+    <p id="conceptText" style="font-size:16px"></p>
+    <div>
+      <button class="btn ghost" id="copyConceptBtn">⧉ Copy concept</button>
+      <button class="btn ghost" id="dlConceptBtn">⬇ Download concept (.txt)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 id="aiName">MEET YOUR AI PAL</h2>
+    <p id="aiDesc" style="font-size:16px"></p>
+    <p style="margin-top:8px;color:var(--gold)" id="aiTip"></p>
+    <div class="aiq">
+      <input id="aiInput" placeholder="Ask your AI pal about this game…" aria-label="Ask your AI pal">
+      <button class="btn pink" id="aiAsk">Ask</button>
+    </div>
+    <div id="aiAnswer">Ask me how to play, how to win, or for a strategy tip.</div>
+  </div>
+
+  <div class="card">
+    <h2>GAME CODE</h2>
+    <p style="color:var(--mut);margin-bottom:10px">The real code that runs above — copy it or download the standalone file.</p>
+    <pre id="codeView">Loading…</pre>
+  </div>
+
+</div>
+
 <footer>
   <div class="wrap">
     <p style="margin-top:14px">© 2026 Manon · The Signature Game Store</p>
@@ -117,35 +176,67 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   var speaking = false;
 
   var __jahAud = null;
-  function jahStopAud(){ try{ speechSynthesis.cancel(); }catch(e){} try{ if(__jahAud){ __jahAud.pause(); __jahAud=null; } }catch(e){} }
+  function jahStopAud(){ try{ if(__jahAud){ __jahAud.pause(); __jahAud=null; } }catch(e){} }
+  /* Audio-only tiered TTS (ResponsiveVoice -> Google x2). No speechSynthesis:
+     it is silent/missing in Facebook WebView + Android in-app browsers. */
+  var JAHTTS_TIERS = [
+    function(t){ return "https://code.responsivevoice.org/getvoice.php?t="+encodeURIComponent(t)+"&tl=en-US&sv=g2&vn=&pitch=0.5&rate=0.95"; },
+    function(t){ return "https://translate.google.com/translate_tts?ie=UTF-8&q="+encodeURIComponent(t)+"&tl=en&client=tw-ob"; },
+    function(t){ return "https://translate.googleapis.com/translate_tts?ie=UTF-8&q="+encodeURIComponent(t)+"&tl=en&client=tw-ob"; }
+  ];
   function jahSpeakTiered(text, onDone){
     jahStopAud();
     var done = false;
-    function fin(){ if(!done){ done=true; if(onDone) onDone(); } }
-    try{
-      var a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(String(text).slice(0,200))+'&tl=en&client=tw-ob');
-      a.onended = fin; a.onerror = function(){ jahSpeakSS(text, onDone); };
-      __jahAud = a;
-      var pr = a.play();
-      if(pr && pr.catch) pr.catch(function(){ jahSpeakSS(text, onDone); });
-      setTimeout(fin, 15000);
-    }catch(e){ jahSpeakSS(text, onDone); }
-  }
-  function jahSpeakSS(text, onDone){
-    try{
-      if(!('speechSynthesis' in window)){ if(onDone) onDone(); return; }
-      var u = new SpeechSynthesisUtterance(String(text).slice(0,1200));
-      u.onend = u.onerror = function(){ if(onDone) onDone(); };
-      speechSynthesis.speak(u);
-    }catch(e){ if(onDone) onDone(); }
+    function fin(msg){ if(!done){ done=true; if(onDone) onDone(msg); } }
+    var chunks = String(text).replace(/\s+/g," ").trim().match(/.{1,170}(?=\s|$)/g) || [String(text)];
+    var ci = 0;
+    function tierFail(){ fin("unavailable"); }
+    function playTier(ti){
+      if (done) return;
+      if (ti >= JAHTTS_TIERS.length){ tierFail(); return; }
+      if (ci >= chunks.length){ fin(); return; }
+      try{
+        var a = new Audio(JAHTTS_TIERS[ti](chunks[ci].slice(0,200)));
+        __jahAud = a;
+        a.onended = function(){ ci++; playTier(0); };
+        a.onerror = function(){ playTier(ti+1); };
+        var pr = a.play();
+        if (pr && pr.catch) pr.catch(function(){ playTier(ti+1); });
+      }catch(e){ playTier(ti+1); }
+    }
+    setTimeout(function(){ if(!done) fin(); }, 60000);
+    playTier(0);
   }
   function stopRead(){ jahStopAud(); speaking = false; $("readBtn").textContent = "🔊 Read aloud"; }
   $("readBtn").onclick = function(){
     if (speaking) { stopRead(); return; }
     stopRead();
     var txt = g.title + ". " + g.description + " Controls: " + $("gControls").textContent + " How to win: " + $("gWin").textContent;
-    jahSpeakTiered(txt, function(){ speaking = false; $("readBtn").textContent = "🔊 Read aloud";  });
+    speaking = true; $("readBtn").textContent = "⏳ Loading voice…";
+    jahSpeakTiered(txt, function(msg){ speaking = false;
+      $("readBtn").textContent = (msg === "unavailable") ? "🔇 Voice unavailable — try Chrome" : "🔊 Read aloud";  });
   };
+  /* clipboard with fallback for non-secure contexts (FB in-app browser) */
+  function jahCopy(text, ok){
+    function done(ok2){ if(ok) ok(ok2); }
+    try{
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ fallback(); });
+        return;
+      }
+      fallback();
+    }catch(e){ fallback(); }
+    function fallback(){
+      try{
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.style.cssText = "position:fixed;opacity:0";
+        document.body.appendChild(ta); ta.select();
+        var ok2 = false;
+        try{ ok2 = document.execCommand("copy"); }catch(e){}
+        ta.remove(); done(!!ok2);
+      }catch(e){ done(false); }
+    }
+  }
 
   // copy / download
   function realBootSrc(){
@@ -165,15 +256,25 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   }
   $("copyBtn").onclick = function(){
     var t = isConcept ? $("conceptText").innerText : gameFileText();
-    navigator.clipboard.writeText(t).then(function(){ $("copyBtn").textContent = "✓ Copied!"; setTimeout(function(){ $("copyBtn").textContent = "⧉ Copy game file"; }, 1500); });
+    jahCopy(t, function(ok){ $("copyBtn").textContent = ok ? "✓ Copied!" : "⚠ Copy blocked by browser";
+      setTimeout(function(){ $("copyBtn").textContent = "⧉ Copy game file"; }, 1500); });
   };
+  function loadEngine(){
+    fetch("js/gf.js").then(function(r){ return r.text(); }).then(function(t){ window.__gfSrc = t; window.__gfFail = false; })
+    .catch(function(){ window.__gfSrc = null; window.__gfFail = true; });
+  }
   $("dlBtn").onclick = function(){
     if (isConcept) { download($("conceptText").innerText, g.key + "-concept.txt", "text/plain"); return; }
-    if (!window.__gfSrc) { $("dlBtn").textContent = "⏳ engine loading…"; return; }
+    if (!window.__gfSrc) {
+      if (window.__gfFail){ window.__gfFail = false; $("dlBtn").textContent = "⏳ retrying…"; loadEngine(); }
+      else $("dlBtn").textContent = "⏳ engine loading…";
+      return;
+    }
     download(standaloneHTML(), g.key + ".html", "text/html");
   };
   $("copyConceptBtn").onclick = function(){
-    navigator.clipboard.writeText($("conceptText").innerText).then(function(){ $("copyConceptBtn").textContent = "✓ Copied!"; setTimeout(function(){ $("copyConceptBtn").textContent = "⧉ Copy concept"; }, 1500); });
+    jahCopy($("conceptText").innerText, function(ok){ $("copyConceptBtn").textContent = ok ? "✓ Copied!" : "⚠ Copy blocked by browser";
+      setTimeout(function(){ $("copyConceptBtn").textContent = "⧉ Copy concept"; }, 1500); });
   };
   $("dlConceptBtn").onclick = function(){ download($("conceptText").innerText, g.key + "-concept.txt", "text/plain"); };
   function download(text, name, type){
@@ -192,115 +293,11 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
       "<canvas id='c' width='420' height='640' style='border:2px solid #00f0ff;border-radius:12px;touch-action:none'></canvas>" +
       "<script>\n" + window.__gfSrc + "\n" +
       "GameStore.register(" + JSON.stringify(g.key) + ", { boot: " + bootSrc + " });\n" +
-      "GF.boot(" + JSON.stringify(g.key) + ", document.getElementById('c'), {});\n<\/script>
-<style>
-/* ============ FIRST-visit WELCOME overlay (2026-10-04 standard: centered modal, no scroll, no spotlight) ============ */
-#jahWelcome,#jahGuide,#jahGuideBtn{--amber:#00f0ff;--amber2:#00f0ff2}
-#jahGuideBtn{position:fixed;top:14px;right:14px;z-index:99900;min-width:48px;min-height:48px;border-radius:24px;border:1px solid var(--amber,#f5a623);background:var(--panel,#161d27);color:var(--amber2,#ffcf6e);font-weight:700;font-size:18px;padding:10px 16px;cursor:pointer}
-#jahGuideBtn:hover{background:var(--amber,#f5a623);color:#0a0e14}
-#jahWelcome{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.75)}
-#jahWelcome.show{display:flex}
-#jahWelcomeCard{background:var(--panel,#161d27);border:2px solid var(--amber,#f5a623);border-radius:14px;padding:22px 20px;max-width:540px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.6);color:var(--txt,#e8edf4)}
-#jahWelcomeCard h2{margin:0 0 4px;color:var(--amber2,#ffcf6e);font-size:20px}
-#jahWelcomeCard .wsub{margin:4px 0 0;color:var(--dim,#9aa7ba);font-size:14px}
-#jahWelcomeCard ol{margin:10px 0 0;padding-left:22px;font-size:14px;line-height:1.55}
-#jahWelcomeCard ol li{margin:8px 0}
-#jahWelcomeCard ol li b{color:var(--amber2,#ffcf6e)}
-#jahWelcomeCard .wbtnrow{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
-#jahGuide .btn,#jahWelcome .btn{min-height:48px;min-width:48px;font-size:15px;padding:12px 22px;border-radius:10px;border:1px solid var(--amber,#f5a623);background:transparent;color:var(--amber2,#ffcf6e);cursor:pointer;font-family:inherit}
-#jahWelcomeOk{font-weight:700;background:var(--amber,#f5a623)!important;color:#0a0e14!important;border:none!important}
-#jahGuide{position:fixed;inset:0;z-index:99900;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.7)}
-#jahGuide.show{display:flex}
-#jahGuideCard{background:var(--panel,#161d27);border:1px solid var(--amber,#f5a623);border-radius:14px;max-width:680px;width:100%;max-height:86vh;overflow:auto;padding:20px 22px;color:var(--txt,#e8edf4)}
-#jahGuideCard h2{margin-top:0;color:var(--amber2,#ffcf6e)}
-#jahGuideCard .gfeat{margin:0 0 14px;padding:10px 12px;background:#10151d;border:1px solid var(--line,#2a3444);border-radius:10px}
-#jahGuideCard .gfeat b{color:var(--amber2,#ffcf6e)}
-#jahGuideCard .gfeat p{margin:4px 0 0;font-size:14px;line-height:1.5;color:var(--txt,#e8edf4)}
-#jahGuideCard .gfeat p b{color:var(--amber2,#ffcf6e)}
-#jahGuideCard .gfeat ul{margin:4px 0;padding-left:20px}
-#jahGuideCloseRow{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-</style>
-<button id="jahGuideBtn" aria-label="Open the site guide" title="How to use this site — every feature, in plain language">?</button>
-<!-- first-visit WELCOME overlay (2026-10-04 standard: centered modal, no scroll, no spotlight) -->
-<div id="jahWelcome" aria-hidden="true">
-  <div id="jahWelcomeCard" role="dialog" aria-modal="true" aria-label="Welcome to The Signature Game Store">
-    <h2>Welcome to The Signature Game Store</h2>
-    <p class="wsub">Real playable games &mdash; pick an era, press PLAY, and play right in your browser. Here&rsquo;s how to use it:</p>
-    <ol>
-      <li><b>Browse by era.</b> Six graphics eras &mdash; 6-BIT, 32-BIT, PLAYSTATION, 64, PS3, BEYOND &mdash; each game&rsquo;s look steps up through gaming history.</li>
-      <li><b>Open a game.</b> Cover, what it is, how to win &mdash; plus the Game Master AI pal for tips and the real game code.</li>
-      <li><b>Press PLAY.</b> The game boots on the page &mdash; touch controls, score, game over, restart. The era dial changes the look live.</li>
-      <li><b>Game Archive.</b> The full A&ndash;Z catalog lives on the archive tab &mdash; the front page stays lean.</li>
-    </ol>
-    <div class="wbtnrow">
-      <button class="btn" id="jahWelcomeOk" type="button">OK &mdash; Got it &#10003;</button>
-      <button class="btn" id="jahWelcomeFull" type="button">Full how-to guide</button>
-    </div>
-  </div>
-</div>
-<div id="jahGuide" aria-hidden="true">
-  <div id="jahGuideCard" role="dialog" aria-modal="true" aria-label="How to use The Signature Game Store">
-    <div id="jahGuideCloseRow">
-      <h2 style="margin:0">How to use this site</h2>
-      <button class="btn" id="jahGuideClose" type="button">&#10005; Close</button>
-    </div>
-    <div class="gfeat"><b>&#127918; Playable games</b><p><b>What:</b> the catalog. <b>Does:</b> 13 original games, arcade to modern &mdash; every one actually plays on the page. <b>How:</b> Open a game, press PLAY NOW.</p></div>
-    <div class="gfeat"><b>&#128377; Era tiers</b><p><b>What:</b> the graphics dial. <b>Does:</b> 6-BIT, 32-BIT, PLAYSTATION, 64, PS3, BEYOND &mdash; same game, six looks, switchable live and remembered on your device. <b>How:</b> The era selector above the game canvas.</p></div>
-    <div class="gfeat"><b>&#129516; Game Master</b><p><b>What:</b> the per-game AI pal. <b>Does:</b> Ask how to play, how to win, or for a strategy tip &mdash; answers come from the game&rsquo;s real data. <b>How:</b> Type in the Ask box on the game page.</p></div>
-    <div class="gfeat"><b>&#128196; Game code</b><p><b>What:</b> the real running code. <b>Does:</b> The actual code behind the game &mdash; copy it or download the standalone file. <b>How:</b> The Game Code section on the game page.</p></div>
-    <div class="gfeat"><b>&#128203; Game Archive</b><p><b>What:</b> the archive tab. <b>Does:</b> The full A&ndash;Z catalog with search and era filters. <b>How:</b> The Game Archive tab &mdash; front page stays lean by design.</p></div>
-    <div class="btnrow" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
-      <button class="btn" id="jahGuideTour" type="button">&#9654; Show the welcome guide</button>
-      <button class="btn" id="jahGuideClose2" type="button">&#10005; Close guide</button>
-    </div>
-  </div>
-</div>
-<script>(function(){try{
-/* ---------- first-visit WELCOME overlay (2026-10-04 standard): centered modal.
-   NO auto-scroll, NO spotlight, NO section jumps — the page stays put, the overlay teaches. ---------- */
-var FLAG="jah-tour-seen-gamestore";
-/* JAHProfile storage wrapper (JAHPS): public visitors pass keys through unprefixed (behavior unchanged); signed-in profiles get per-profile namespaced storage. */
-var JAHPS=(function(){try{return (typeof JAHProfile!=="undefined")&&JAHProfile.store?JAHProfile.store:localStorage;}catch(e){return localStorage;}})();
-function ls(k,v){try{if(v===undefined)return JAHPS.get(k);JAHPS.set(k,v)}catch(e){return null}}
-var w=document.getElementById("jahWelcome"),
-    guide=document.getElementById("jahGuide"),
-    guideCard=document.getElementById("jahGuideCard"),
-    guideBtn=document.getElementById("jahGuideBtn");
-function openWelcome(){if(!w)return;w.classList.add("show");w.setAttribute("aria-hidden","false");
-  try{document.getElementById("jahWelcomeOk").focus({preventScroll:true})}catch(e){}}
-function closeWelcome(){if(!w)return;w.classList.remove("show");w.setAttribute("aria-hidden","true");ls(FLAG,"1")}
-document.getElementById("jahWelcomeOk").onclick=closeWelcome;
-document.getElementById("jahWelcomeFull").onclick=function(){closeWelcome();openGuide()};
-w.addEventListener("click",function(e){if(e.target===w)closeWelcome()});
-document.addEventListener("keydown",function(e){
-  if(w.classList.contains("show")&&e.key==="Escape"){closeWelcome();e.preventDefault()}});
-function openGuide(){if(!guide)return;guide.classList.add("show");guide.setAttribute("aria-hidden","false");
-  try{guideCard.scrollTop=0;document.getElementById("jahGuideClose").focus({preventScroll:true})}catch(e){}}
-function closeGuide(){if(!guide)return;guide.classList.remove("show");guide.setAttribute("aria-hidden","true");
-  try{guideBtn.focus({preventScroll:true})}catch(e){}}
-guideBtn.onclick=openWelcome;
-document.getElementById("jahGuideClose").onclick=closeGuide;
-document.getElementById("jahGuideClose2").onclick=closeGuide;
-document.getElementById("jahGuideTour").onclick=function(){closeGuide();openWelcome()};
-guide.addEventListener("click",function(e){if(e.target===guide)closeGuide()});
-var __qs="",__hash="";try{__qs=location.search;__hash=location.hash}catch(e){}
-if(!ls(FLAG)&&__qs.indexOf("id=")<0){setTimeout(openWelcome,900)}
-}catch(e){}})();</script>
-<script>
-(function () {
-  /* JAHProfile sign-in — mount the header button. signin.js is already loaded above. */
-  var mount = document.querySelector('header .booksearch') ||
-              document.querySelector('nav.jtabbar') ||
-              document.querySelector('header nav') ||
-              document.querySelector('header') ||
-              document.body;
-  if (window.JAHProfile && JAHProfile.ui) JAHProfile.ui.renderButton(mount);
-})();
-</script>
-</body></html>";
+      "GF.boot(" + JSON.stringify(g.key) + ", document.getElementById('c'), {});\n<\/" + "script>\n" +
+      "</body></html>";
   }
-  // capture real sources for download/copy
-  fetch("js/gf.js").then(function(r){ return r.text(); }).then(function(t){ window.__gfSrc = t; }).catch(function(){ window.__gfSrc = "/* engine load failed */"; });
+  // capture real engine source for download/copy (retryable; never ships a broken file)
+  loadEngine();
 
   // boot the game on-site
   if (!isConcept) {

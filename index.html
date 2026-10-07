@@ -58,6 +58,47 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   <a href="archive.html">🎮 Game Archive</a>
 </nav>
 
+<div class="wrap">
+  <section class="card">
+    <h2>WELCOME TO THE STORE</h2>
+    <p class="mission">This is <strong>The Signature Game Store</strong> — a real, working game shop built by Manon.
+    Every game on the shelves is playable right here in your browser, or downloadable as real code you can keep.
+    The collection runs from <strong>1970s arcade-style cabinets</strong> through 90s puzzle eras to <strong>modern combat-style ops</strong> —
+    plus Signature remakes of classic game <em>styles</em> (in the style of the greats, never copying them),
+    a <strong>starship multiverse</strong> of space-opera adventures, and brand-new originals found nowhere else.</p>
+    <p class="mission" style="margin-top:10px">Our mission: a million games, every one with its own cover, its own description, and its own AI companion from the
+    Signature AI Phone Book. The store is open around the clock — pick a game and play.</p>
+    <p style="margin-top:14px"><a class="btn" href="archive.html">Browse the Game Archive →</a></p>
+  </section>
+
+  <section class="card">
+    <h2>HOW THE STORE WORKS</h2>
+    <div class="grid">
+      <div><h3 style="color:var(--gold)">🕹️ PLAY ON-SITE</h3><p>Seeded games run right in this page — keyboard, touch, and tap controls. No downloads, no waiting.</p></div>
+      <div><h3 style="color:var(--gold)">💾 DOWNLOAD</h3><p>Every game ships as real JavaScript you can copy or download and run anywhere.</p></div>
+      <div><h3 style="color:var(--gold)">🎨 COVERS</h3><p>Each game gets a deterministic cover, generated from its own ID — the same cover every visit, unique per game.</p></div>
+      <div><h3 style="color:var(--gold)">🤖 AI PALS</h3><p>Games that need a guide or an opponent bring one from the Signature AI Phone Book — the same AIs, coherent everywhere.</p></div>
+    </div>
+  </section>
+
+  <section class="card" id="eraBrowse">
+    <h2>PLAY BY ERA</h2>
+    <p style="color:var(--mut);margin-bottom:12px">Pick an era — the games of that era, played at that era's graphics. Your choice carries into the game.</p>
+    <div class="grid" id="eraGrid"><p style="color:var(--mut)">Loading eras…</p></div>
+  </section>
+
+  <section class="card" id="genreBrowse">
+    <h2>BROWSE BY GENRE</h2>
+    <div id="genreChips" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><p style="color:var(--mut)">Loading genres…</p></div>
+  </section>
+
+  <section class="card" id="featured">
+    <h2>FEATURED THIS VISIT</h2>
+    <div class="grid" id="featuredGrid"><p style="color:var(--mut)">Loading the shelves…</p></div>
+    <p style="margin-top:12px"><a class="btn ghost" href="archive.html">See all games in the archive →</a></p>
+  </section>
+</div>
+
 <footer>
   <div class="wrap">
     <p style="margin-top:14px">© 2026 Manon · The Signature Game Store · Games march to 1,000,000 · All games original Signature works; classic-style remakes are "in the style of" only.</p>

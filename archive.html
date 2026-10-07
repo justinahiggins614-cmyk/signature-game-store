@@ -53,6 +53,42 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   <a href="archive.html" class="on" aria-current="page">🎮 Game Archive</a>
 </nav>
 
+<div class="wrap">
+  <div class="card" id="bestCard">
+    <h2>⭐ AI'S BEST OF THE BEST</h2>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div id="bestCover" style="flex:0 0 220px;max-width:100%"></div>
+      <div style="flex:1;min-width:240px">
+        <h3 id="bestTitle" style="margin-top:0">Loading…</h3>
+        <div id="bestChips" style="margin:6px 0"></div>
+        <p id="bestDesc"></p>
+        <p><strong style="color:var(--gold)">Why it's the best:</strong> <span id="bestWhy"></span></p>
+        <p style="color:var(--mut)" id="bestStats"></p>
+        <div>
+          <a class="btn" id="bestPlay" href="#">▶ Play now</a>
+          <button class="btn ghost" id="bestRead">🔊 Read aloud</button>
+          <button class="btn ghost" id="bestCopy">⧉ Copy</button>
+          <button class="btn ghost" id="bestDl">⬇ Download</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>ASK THE ARCHIVE AI</h2>
+    <div id="aiBox">
+      <input id="aiQ" placeholder="Find a game: 'space game', 'puzzle', 'hard'… or ask anything" aria-label="Ask the archive AI">
+      <button class="btn pink" id="aiGo">Ask</button>
+    </div>
+    <div id="aiFind">Tell me what kind of game you want and I'll find it on the shelves.</div>
+  </div>
+
+  <div class="card">
+    <h2>A–Z · EVERY GAME (<span id="gCount">…</span>)</h2>
+    <div id="azList"></div>
+  </div>
+</div>
+
 <footer>
   <div class="wrap">
     <p style="margin-top:14px">© 2026 Manon · The Signature Game Store</p>
@@ -115,37 +151,67 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   var reading = false;
 
   var __jahAud = null;
-  function jahStopAud(){ try{ speechSynthesis.cancel(); }catch(e){} try{ if(__jahAud){ __jahAud.pause(); __jahAud=null; } }catch(e){} }
+  function jahStopAud(){ try{ if(__jahAud){ __jahAud.pause(); __jahAud=null; } }catch(e){} }
+  /* Audio-only tiered TTS (ResponsiveVoice -> Google x2). No speechSynthesis:
+     it is silent/missing in Facebook WebView + Android in-app browsers. */
+  var JAHTTS_TIERS = [
+    function(t){ return "https://code.responsivevoice.org/getvoice.php?t="+encodeURIComponent(t)+"&tl=en-US&sv=g2&vn=&pitch=0.5&rate=0.95"; },
+    function(t){ return "https://translate.google.com/translate_tts?ie=UTF-8&q="+encodeURIComponent(t)+"&tl=en&client=tw-ob"; },
+    function(t){ return "https://translate.googleapis.com/translate_tts?ie=UTF-8&q="+encodeURIComponent(t)+"&tl=en&client=tw-ob"; }
+  ];
   function jahSpeakTiered(text, onDone){
     jahStopAud();
     var done = false;
-    function fin(){ if(!done){ done=true; if(onDone) onDone(); } }
-    try{
-      var a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(String(text).slice(0,200))+'&tl=en&client=tw-ob');
-      a.onended = fin; a.onerror = function(){ jahSpeakSS(text, onDone); };
-      __jahAud = a;
-      var pr = a.play();
-      if(pr && pr.catch) pr.catch(function(){ jahSpeakSS(text, onDone); });
-      setTimeout(fin, 15000);
-    }catch(e){ jahSpeakSS(text, onDone); }
-  }
-  function jahSpeakSS(text, onDone){
-    try{
-      if(!('speechSynthesis' in window)){ if(onDone) onDone(); return; }
-      var u = new SpeechSynthesisUtterance(String(text).slice(0,1200));
-      u.onend = u.onerror = function(){ if(onDone) onDone(); };
-      speechSynthesis.speak(u);
-    }catch(e){ if(onDone) onDone(); }
+    function fin(msg){ if(!done){ done=true; if(onDone) onDone(msg); } }
+    var chunks = String(text).replace(/\s+/g," ").trim().match(/.{1,170}(?=\s|$)/g) || [String(text)];
+    var ci = 0;
+    function playTier(ti){
+      if (done) return;
+      if (ti >= JAHTTS_TIERS.length){ fin("unavailable"); return; }
+      if (ci >= chunks.length){ fin(); return; }
+      try{
+        var a = new Audio(JAHTTS_TIERS[ti](chunks[ci].slice(0,200)));
+        __jahAud = a;
+        a.onended = function(){ ci++; playTier(0); };
+        a.onerror = function(){ playTier(ti+1); };
+        var pr = a.play();
+        if (pr && pr.catch) pr.catch(function(){ playTier(ti+1); });
+      }catch(e){ playTier(ti+1); }
+    }
+    setTimeout(function(){ if(!done) fin(); }, 60000);
+    playTier(0);
   }
   function stopRead(){ jahStopAud(); reading=false; $("bestRead").textContent="🔊 Read aloud"; }
   $("bestRead").onclick = function(){
     if (reading){ stopRead(); return; }
     stopRead();
-    jahSpeakTiered("Best of the best: " + best.title + ". " + best.description + " Why it's the best: " + $("bestWhy").textContent, function(){ reading=false; $("bestRead").textContent="🔊 Read aloud";  });
+    reading = true; $("bestRead").textContent = "⏳ Loading voice…";
+    jahSpeakTiered("Best of the best: " + best.title + ". " + best.description + " Why it's the best: " + $("bestWhy").textContent, function(msg){ reading=false; $("bestRead").textContent = (msg==="unavailable") ? "🔇 Voice unavailable — try Chrome" : "🔊 Read aloud";  });
   };
+  function jahCopy(text, ok){
+    function done(ok2){ if(ok) ok(ok2); }
+    try{
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ fallback(); });
+        return;
+      }
+      fallback();
+    }catch(e){ fallback(); }
+    function fallback(){
+      try{
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.style.cssText = "position:fixed;opacity:0";
+        document.body.appendChild(ta); ta.select();
+        var ok2 = false;
+        try{ ok2 = document.execCommand("copy"); }catch(e){}
+        ta.remove(); done(!!ok2);
+      }catch(e){ done(false); }
+    }
+  }
   $("bestCopy").onclick = function(){
-    navigator.clipboard.writeText(best.title + " (" + best.id + ")\n" + best.description + "\nControls: " + best.controls + "\nWin: " + best.win).then(function(){
-      $("bestCopy").textContent = "✓ Copied!"; setTimeout(function(){ $("bestCopy").textContent = "⧉ Copy"; }, 1500);
+    jahCopy(best.title + " (" + best.id + ")\n" + best.description + "\nControls: " + best.controls + "\nWin: " + best.win, function(ok){
+      $("bestCopy").textContent = ok ? "✓ Copied!" : "⚠ Copy blocked by browser";
+      setTimeout(function(){ $("bestCopy").textContent = "⧉ Copy"; }, 1500);
     });
   };
   $("bestDl").onclick = function(){
@@ -181,37 +247,41 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   $("aiGo").onclick = ask;
   $("aiQ").addEventListener("keydown", function(e){ if (e.key === "Enter") ask(); });
 
-  // ---- A–Z ----
+  // ---- A–Z (collapsible, lazy: a letter's cards render only when first opened) ----
   var letters = {};
   all.forEach(function(g){
     var L = g.title.replace(/^The /i, "").charAt(0).toUpperCase();
     (letters[L] = letters[L] || []).push(g);
   });
   var az = $("azList");
-  Object.keys(letters).sort().forEach(function(L, idx){
+  Object.keys(letters).sort().forEach(function(L){
     var games = letters[L];
     var det = document.createElement("details");
     det.className = "az";
-    if (idx === 0) det.open = true;
     var sum = document.createElement("summary");
     sum.innerHTML = GameCatalog.esc(L) + ' <span class="cnt">' + games.length + " game" + (games.length>1?"s":"") + "</span>";
     det.appendChild(sum);
     var grid = document.createElement("div");
     grid.className = "azgrid";
-    games.forEach(function(g){
-      var a = document.createElement("a");
-      a.className = "azcard";
-      a.href = "game.html?id=" + g.id + (tierActive ? "&tier=" + tierQ : "");
-      a.innerHTML = GameCatalog.coverSVG(g) +
-        '<div class="t">' + GameCatalog.esc(g.title) + "</div>" +
-        '<div class="s">' + GameCatalog.esc(g.genre) + " · " + GameCatalog.esc(GameCatalog.tierNameOf(g)) + " · " + (g.playable ? "▶ playable" : "💾 concept") + "</div>";
-      grid.appendChild(a);
-    });
+    grid.innerHTML = '<p style="color:var(--mut)">Tap the letter to load its games…</p>';
     det.appendChild(grid);
+    var loaded = false;
+    det.addEventListener("toggle", function(){
+      if (!det.open || loaded) return;
+      loaded = true;
+      grid.innerHTML = "";
+      games.forEach(function(g){
+        var a = document.createElement("a");
+        a.className = "azcard";
+        a.href = "game.html?id=" + g.id + (tierActive ? "&tier=" + tierQ : "");
+        a.innerHTML = GameCatalog.coverSVG(g) +
+          '<div class="t">' + GameCatalog.esc(g.title) + "</div>" +
+          '<div class="s">' + GameCatalog.esc(g.genre) + " · " + GameCatalog.esc(GameCatalog.tierNameOf(g)) + " · " + (g.playable ? "▶ playable" : "💾 concept") + "</div>";
+        grid.appendChild(a);
+      });
+    });
     az.appendChild(det);
   });
-
-  GameCatalog.buildNetNav($("netnavList"));
 })();
 </script>
 
