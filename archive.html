@@ -113,14 +113,35 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
   $("bestStats").textContent = "6 sectors · 1 starship · 2 resources (fuel, artifacts) · guided by " + ai.name + " · " + best.controls;
   $("bestPlay").href = "game.html?id=" + best.id + "&tier=" + GameCatalog.tierIndexOf(best);
   var reading = false;
-  function stopRead(){ try{ speechSynthesis.cancel(); }catch(e){} reading=false; $("bestRead").textContent="🔊 Read aloud"; }
+
+  var __jahAud = null;
+  function jahStopAud(){ try{ speechSynthesis.cancel(); }catch(e){} try{ if(__jahAud){ __jahAud.pause(); __jahAud=null; } }catch(e){} }
+  function jahSpeakTiered(text, onDone){
+    jahStopAud();
+    var done = false;
+    function fin(){ if(!done){ done=true; if(onDone) onDone(); } }
+    try{
+      var a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(String(text).slice(0,200))+'&tl=en&client=tw-ob');
+      a.onended = fin; a.onerror = function(){ jahSpeakSS(text, onDone); };
+      __jahAud = a;
+      var pr = a.play();
+      if(pr && pr.catch) pr.catch(function(){ jahSpeakSS(text, onDone); });
+      setTimeout(fin, 15000);
+    }catch(e){ jahSpeakSS(text, onDone); }
+  }
+  function jahSpeakSS(text, onDone){
+    try{
+      if(!('speechSynthesis' in window)){ if(onDone) onDone(); return; }
+      var u = new SpeechSynthesisUtterance(String(text).slice(0,1200));
+      u.onend = u.onerror = function(){ if(onDone) onDone(); };
+      speechSynthesis.speak(u);
+    }catch(e){ if(onDone) onDone(); }
+  }
+  function stopRead(){ jahStopAud(); reading=false; $("bestRead").textContent="🔊 Read aloud"; }
   $("bestRead").onclick = function(){
     if (reading){ stopRead(); return; }
     stopRead();
-    var u = new SpeechSynthesisUtterance("Best of the best: " + best.title + ". " + best.description + " Why it's the best: " + $("bestWhy").textContent);
-    u.onend = u.onerror = function(){ reading=false; $("bestRead").textContent="🔊 Read aloud"; };
-    reading = true; $("bestRead").textContent = "⏹ Stop";
-    speechSynthesis.speak(u);
+    jahSpeakTiered("Best of the best: " + best.title + ". " + best.description + " Why it's the best: " + $("bestWhy").textContent, function(){ reading=false; $("bestRead").textContent="🔊 Read aloud";  });
   };
   $("bestCopy").onclick = function(){
     navigator.clipboard.writeText(best.title + " (" + best.id + ")\n" + best.description + "\nControls: " + best.controls + "\nWin: " + best.win).then(function(){

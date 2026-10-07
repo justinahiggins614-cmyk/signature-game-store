@@ -115,16 +115,36 @@ footer{border-top:2px solid #1b2a6b;margin-top:30px;padding:22px 0;color:var(--m
 
   // read aloud — one controller, play() stops current first
   var speaking = false;
-  function stopRead(){ try{ speechSynthesis.cancel(); }catch(e){} speaking = false; $("readBtn").textContent = "🔊 Read aloud"; }
+
+  var __jahAud = null;
+  function jahStopAud(){ try{ speechSynthesis.cancel(); }catch(e){} try{ if(__jahAud){ __jahAud.pause(); __jahAud=null; } }catch(e){} }
+  function jahSpeakTiered(text, onDone){
+    jahStopAud();
+    var done = false;
+    function fin(){ if(!done){ done=true; if(onDone) onDone(); } }
+    try{
+      var a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(String(text).slice(0,200))+'&tl=en&client=tw-ob');
+      a.onended = fin; a.onerror = function(){ jahSpeakSS(text, onDone); };
+      __jahAud = a;
+      var pr = a.play();
+      if(pr && pr.catch) pr.catch(function(){ jahSpeakSS(text, onDone); });
+      setTimeout(fin, 15000);
+    }catch(e){ jahSpeakSS(text, onDone); }
+  }
+  function jahSpeakSS(text, onDone){
+    try{
+      if(!('speechSynthesis' in window)){ if(onDone) onDone(); return; }
+      var u = new SpeechSynthesisUtterance(String(text).slice(0,1200));
+      u.onend = u.onerror = function(){ if(onDone) onDone(); };
+      speechSynthesis.speak(u);
+    }catch(e){ if(onDone) onDone(); }
+  }
+  function stopRead(){ jahStopAud(); speaking = false; $("readBtn").textContent = "🔊 Read aloud"; }
   $("readBtn").onclick = function(){
     if (speaking) { stopRead(); return; }
     stopRead();
     var txt = g.title + ". " + g.description + " Controls: " + $("gControls").textContent + " How to win: " + $("gWin").textContent;
-    var u = new SpeechSynthesisUtterance(txt);
-    u.onend = function(){ speaking = false; $("readBtn").textContent = "🔊 Read aloud"; };
-    u.onerror = u.onend;
-    speaking = true; $("readBtn").textContent = "⏹ Stop";
-    speechSynthesis.speak(u);
+    jahSpeakTiered(txt, function(){ speaking = false; $("readBtn").textContent = "🔊 Read aloud";  });
   };
 
   // copy / download
