@@ -303,11 +303,15 @@ S.stop=function(){ S.fbStop(); };
     playTier(0);
   }
   function stopRead(){ try{if(window.SigTTS)window.SigTTS.stop();}catch(e){} jahStopAud(); reading=false; $("bestRead").textContent="🔊 Read aloud"; }
+  var readSeq=0; /* invalidates stale async onDone after a newer tap/stop */
   $("bestRead").onclick = function(){
+    readSeq++;
     if (reading){ stopRead(); return; }
     stopRead();
     reading = true; $("bestRead").textContent = "⏳ Loading voice…";
-    jahSpeakTiered("Best of the best: " + best.title + ". " + best.description + " Why it's the best: " + $("bestWhy").textContent, function(msg){ reading=false; $("bestRead").textContent = (msg==="unavailable") ? "🔇 Voice unavailable — try Chrome" : "🔊 Read aloud";  });
+    var my=readSeq;
+    /* onDone ALWAYS fires exactly once — label restored there, never stuck */
+    jahSpeakTiered("Best of the best: " + best.title + ". " + best.description + " Why it's the best: " + $("bestWhy").textContent, function(msg){ if(my!==readSeq)return; reading=false; $("bestRead").textContent = (msg==="unavailable") ? "🔇 Voice unavailable — try Chrome" : "🔊 Read aloud";  });
   };
   function jahCopy(text, ok){
     function done(ok2){ if(ok) ok(ok2); }
